@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>관리자 | SUPANOVA</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+<script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+<style>
+  :root {
+    --bg: #0c0c0e;
+    --surface: #141416;
+    --surface2: #1a1a1d;
+    --border: rgba(255,255,255,0.08);
+    --gold: #c9a55a;
+    --gold-dim: rgba(201,165,90,0.15);
+    --text: #f0ede8;
+    --text-dim: rgba(240,237,232,0.45);
+    --glass: rgba(255,255,255,0.04);
+    --glass2: rgba(255,255,255,0.07);
+    --green: #4ade80;
+    --green-dim: rgba(74,222,128,0.12);
+    --red: #f87171;
+    --red-dim: rgba(248,113,113,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Pretendard Variable', 'Pretendard', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── LOGIN GATE ── */
+  #login-gate {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: var(--bg);
+  }
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 48px 40px;
+    width: 100%;
+    max-width: 380px;
+    text-align: center;
+  }
+  .login-logo {
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .login-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 32px;
+  }
+  .login-input {
+    width: 100%;
+    background: var(--glass2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    color: var(--text);
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+  }
+  .login-input:focus { border-color: var(--gold); }
+  .login-btn {
+    width: 100%;
+    background: var(--gold);
+    color: #0c0c0e;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    margin-top: 4px;
+    transition: opacity 0.2s, transform 0.15s;
+  }
+  .login-btn:hover { opacity: 0.9; transform: scale(1.01); }
+  .login-btn:active { transform: scale(0.98); }
+  .login-error {
+    color: var(--red);
+    font-size: 13px;
+    margin-top: 10px;
+    display: none;
+  }
+
+  /* ── ADMIN LAYOUT ── */
+  #admin-panel { display: none; }
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar-brand {
+    font-size: 13px;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    font-weight: 700;
+  }
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logout-btn {
+    background: var(--glass2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 14px;
+    color: var(--text-dim);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .logout-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
+  .main-wrap { padding: 32px; max-width: 1200px; margin: 0 auto; }
+
+  /* ── STATS ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 24px;
+  }
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+  .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .stat-value.gold { color: var(--gold); }
+  .stat-value.green { color: var(--green); }
+
+  /* ── TABLE SECTION ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .refresh-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--glass2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 14px;
+    color: var(--text-dim);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .refresh-btn:hover { color: var(--text); }
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  td {
+    padding: 14px 16px;
+    font-size: 14px;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--glass); }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+  }
+  .badge-pending {
+    background: var(--gold-dim);
+    color: var(--gold);
+    border: 1px solid rgba(201,165,90,0.3);
+  }
+  .badge-done {
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1px solid rgba(74,222,128,0.3);
+  }
+
+  .action-btn {
+    background: var(--glass2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    color: var(--text-dim);
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .action-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
+  .action-btn.complete { color: var(--green); border-color: rgba(74,222,128,0.3); }
+  .action-btn.complete:hover { background: var(--green-dim); }
+  .action-btn.revert { color: var(--gold); border-color: rgba(201,165,90,0.3); }
+  .action-btn.revert:hover { background: var(--gold-dim); }
+  .action-btn.del { color: var(--red); border-color: rgba(248,113,113,0.3); }
+  .action-btn.del:hover { background: var(--red-dim); }
+
+  .actions-cell { display: flex; gap: 6px; }
+
+  .empty-row td {
+    text-align: center;
+    color: var(--text-dim);
+    padding: 48px;
+    font-size: 14px;
+  }
+  .loading-row td {
+    text-align: center;
+    color: var(--text-dim);
+    padding: 48px;
+    font-size: 14px;
+  }
+
+  /* ── MODAL (상세 보기) ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    width: 90%;
+    max-width: 520px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .modal-title { font-size: 16px; font-weight: 700; }
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+  }
+  .modal-close:hover { color: var(--text); }
+  .detail-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .detail-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .detail-label { font-size: 11px; color: var(--text-dim); letter-spacing: 0.08em; text-transform: uppercase; }
+  .detail-value { font-size: 14px; color: var(--text); line-height: 1.6; white-space: pre-wrap; }
+
+  /* ── FILTER ── */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .filter-btn {
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--glass2);
+    color: var(--text-dim);
+    transition: all 0.2s;
+  }
+  .filter-btn.active {
+    background: var(--gold);
+    color: #0c0c0e;
+    border-color: var(--gold);
+    font-weight: 700;
+  }
+
+  @media (max-width: 768px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .main-wrap { padding: 16px; }
+    .topbar { padding: 12px 16px; }
+    th:nth-child(3), td:nth-child(3),
+    th:nth-child(4), td:nth-child(4) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN GATE ── -->
+<div id="login-gate">
+  <div class="login-card">
+    <div class="login-logo">SUPANOVA</div>
+    <div class="login-title">관리자 로그인</div>
+    <input type="password" id="pw-input" class="login-input" placeholder="비밀번호 입력"
+           onkeydown="if(event.key==='Enter') doLogin()">
+    <button class="login-btn" onclick="doLogin()">로그인</button>
+    <div class="login-error" id="login-error">비밀번호가 올바르지 않습니다.</div>
+  </div>
+</div>
+
+<!-- ── ADMIN PANEL ── -->
+<div id="admin-panel">
+  <div class="topbar">
+    <div class="topbar-brand">SUPANOVA · 관리자</div>
+    <div class="topbar-right">
+      <span id="topbar-time" style="font-size:12px;color:var(--text-dim);"></span>
+      <button class="logout-btn" onclick="doLogout()">로그아웃</button>
+    </div>
+  </div>
+
+  <div class="main-wrap">
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">전체 신청</div>
+        <div class="stat-value gold" id="stat-total">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">대기 중</div>
+        <div class="stat-value" id="stat-pending">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">처리 완료</div>
+        <div class="stat-value green" id="stat-done">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">오늘 신청</div>
+        <div class="stat-value" id="stat-today">—</div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="section-header">
+      <div class="section-title">상담 신청 목록</div>
+      <button class="refresh-btn" onclick="loadData()">
+        <iconify-icon icon="solar:refresh-bold"></iconify-icon> 새로고침
+      </button>
+    </div>
+
+    <div class="filter-bar">
+      <button class="filter-btn active" id="filter-all" onclick="setFilter('all')">전체</button>
+      <button class="filter-btn" id="filter-pending" onclick="setFilter('pending')">대기 중</button>
+      <button class="filter-btn" id="filter-done" onclick="setFilter('done')">처리 완료</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>이름</th>
+            <th>연락처</th>
+            <th>이메일</th>
+            <th>타입</th>
+            <th>상태</th>
+            <th>접수일시</th>
+            <th>작업</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <tr class="loading-row"><td colspan="7">불러오는 중...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── DETAIL MODAL ── -->
+<div class="modal-overlay" id="detail-modal" onclick="if(event.target===this) closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">상담 신청 상세</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════
+const ADMIN_PW    = 'supanova2024!';   // ← 비밀번호 변경 가능
+const SESSION_KEY = 'sn_admin_v1';
+const SUPABASE_URL  = 'https://tctilpuhknxucrlnhlky.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjdGlscHVoa254dWNybG5obGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzE3NjQsImV4cCI6MjA5MTcwNzc2NH0._mS10zf3ayR7nbdFxQJHfZS57_tzOakGm-WkyQB8bxU';
+
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+let allData = [];
+let currentFilter = 'all';
+
+// ══════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════
+function doLogin() {
+  const val = document.getElementById('pw-input').value;
+  if (val === ADMIN_PW) {
+    sessionStorage.setItem(SESSION_KEY, '1');
+    document.getElementById('login-gate').style.display = 'none';
+    document.getElementById('admin-panel').style.display = 'block';
+    loadData();
+    startClock();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+    setTimeout(() => document.getElementById('login-error').style.display = 'none', 3000);
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  location.reload();
+}
+
+function checkSession() {
+  if (sessionStorage.getItem(SESSION_KEY) === '1') {
+    document.getElementById('login-gate').style.display = 'none';
+    document.getElementById('admin-panel').style.display = 'block';
+    loadData();
+    startClock();
+  }
+}
+
+// ══════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════
+async function loadData() {
+  const tbody = document.getElementById('table-body');
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="7">불러오는 중...</td></tr>';
+
+  const { data, error } = await _sb
+    .from('consultations')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="7">오류: ${error.message}<br><small style="color:var(--text-dim);margin-top:8px;display:block;">Supabase RLS 정책을 확인해주세요 (아래 안내 참고)</small></td></tr>`;
+    return;
+  }
+
+  allData = data || [];
+  updateStats();
+  renderTable();
+}
+
+function updateStats() {
+  const today = new Date().toDateString();
+  document.getElementById('stat-total').textContent   = allData.length;
+  document.getElementById('stat-pending').textContent = allData.filter(r => r.status === 'pending').length;
+  document.getElementById('stat-done').textContent    = allData.filter(r => r.status === 'done').length;
+  document.getElementById('stat-today').textContent   = allData.filter(r => new Date(r.created_at).toDateString() === today).length;
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  ['all','pending','done'].forEach(k => {
+    document.getElementById('filter-' + k).classList.toggle('active', k === f);
+  });
+  renderTable();
+}
+
+function renderTable() {
+  const rows = currentFilter === 'all' ? allData
+    : allData.filter(r => r.status === (currentFilter === 'done' ? 'done' : 'pending'));
+
+  const tbody = document.getElementById('table-body');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">신청 내역이 없습니다.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const isPending = r.status === 'pending' || !r.status;
+    const badge = isPending
+      ? '<span class="badge badge-pending">대기 중</span>'
+      : '<span class="badge badge-done">완료</span>';
+    const dt = new Date(r.created_at);
+    const dateStr = `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+    const typeLabel = { '84': '84㎡', '59': '59㎡' }[r.unit_type] || r.unit_type || '—';
+    const actionBtn = isPending
+      ? `<button class="action-btn complete" onclick="changeStatus('${r.id}','done')">완료 처리</button>`
+      : `<button class="action-btn revert" onclick="changeStatus('${r.id}','pending')">대기로 변경</button>`;
+
+    return `<tr>
+      <td><strong>${esc(r.name)}</strong></td>
+      <td>${esc(r.phone)}</td>
+      <td style="color:var(--text-dim)">${esc(r.email||'—')}</td>
+      <td>${typeLabel}</td>
+      <td>${badge}</td>
+      <td style="color:var(--text-dim);font-size:12px">${dateStr}</td>
+      <td>
+        <div class="actions-cell">
+          <button class="action-btn" onclick="openDetail('${r.id}')">상세</button>
+          ${actionBtn}
+          <button class="action-btn del" onclick="deleteRow('${r.id}')">삭제</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// ACTIONS
+// ══════════════════════════════════════════
+async function changeStatus(id, status) {
+  const { error } = await _sb
+    .from('consultations')
+    .update({ status })
+    .eq('id', id);
+  if (error) { alert('오류: ' + error.message); return; }
+  allData = allData.map(r => r.id === id ? { ...r, status } : r);
+  updateStats();
+  renderTable();
+}
+
+async function deleteRow(id) {
+  if (!confirm('이 신청 내역을 삭제하시겠습니까?')) return;
+  const { error } = await _sb.from('consultations').delete().eq('id', id);
+  if (error) { alert('오류: ' + error.message); return; }
+  allData = allData.filter(r => r.id !== id);
+  updateStats();
+  renderTable();
+}
+
+function openDetail(id) {
+  const r = allData.find(d => d.id === id);
+  if (!r) return;
+  const dt = new Date(r.created_at);
+  const dateStr = `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+  const typeLabel = { '84': '84㎡', '59': '59㎡' }[r.unit_type] || r.unit_type || '—';
+  const statusLabel = (r.status === 'done') ? '처리 완료' : '대기 중';
+
+  document.getElementById('modal-content').innerHTML = `
+    <div class="detail-row"><div class="detail-label">이름</div><div class="detail-value">${esc(r.name)}</div></div>
+    <div class="detail-row"><div class="detail-label">연락처</div><div class="detail-value">${esc(r.phone)}</div></div>
+    <div class="detail-row"><div class="detail-label">이메일</div><div class="detail-value">${esc(r.email||'—')}</div></div>
+    <div class="detail-row"><div class="detail-label">관심 타입</div><div class="detail-value">${typeLabel}</div></div>
+    <div class="detail-row"><div class="detail-label">문의 내용</div><div class="detail-value">${esc(r.message||'—')}</div></div>
+    <div class="detail-row"><div class="detail-label">상태</div><div class="detail-value">${statusLabel}</div></div>
+    <div class="detail-row"><div class="detail-label">접수일시</div><div class="detail-value">${dateStr}</div></div>
+  `;
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('detail-modal').classList.remove('open');
+}
+
+// ══════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function startClock() {
+  const el = document.getElementById('topbar-time');
+  const tick = () => {
+    const n = new Date();
+    el.textContent = `${n.getFullYear()}.${String(n.getMonth()+1).padStart(2,'0')}.${String(n.getDate()).padStart(2,'0')} ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
+  };
+  tick();
+  setInterval(tick, 60000);
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+checkSession();
+</script>
+</body>
+</html>
