@@ -1,1663 +1,1594 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>용인·신갈 펜타원 PENTA I</title>
-  <meta name="description" content="용인 신갈오거리 31층 하이엔드 랜드마크 펜타원 PENTA I. 강남 30분대, 초품아 학세권, 스카이브릿지 설계. 303세대.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600;700;900&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PENTA I 펜타원 | 용인신갈 프리미엄 아파트 분양</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+<style>
+  :root {
+    --bg: #0c0c0e;
+    --bg2: #111114;
+    --bg3: #18181c;
+    --gold: #c9a55a;
+    --gold-light: #e2c07a;
+    --gold-dim: rgba(201,165,90,0.15);
+    --glass: rgba(255,255,255,0.04);
+    --glass2: rgba(255,255,255,0.07);
+    --border: rgba(255,255,255,0.08);
+    --border-gold: rgba(201,165,90,0.3);
+    --text: #f0ede8;
+    --text-dim: #8a8680;
+    --spring: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
 
-  <style>
-    :root {
-      --sage:       #7a8d69;
-      --sage-dark:  #3f5430;
-      --sage-strip: #8a9870;
-      --sage-light: #aab89a;
-      --bg:         #f6f6f1;
-      --white:      #ffffff;
-      --dark:       #242424;
-      --mid:        #555555;
-      --light:      #888888;
-      --border:     #ddddd6;
-      --nav-h:      70px;
-    }
+  /* ── GLASS PILL NAV ── */
+  .nav-pill {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background: rgba(12,12,14,0.75);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+    transition: background 0.3s;
+  }
+  .nav-logo {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--gold);
+    padding: 0 12px 0 4px;
+    margin-right: 8px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .nav-logo img { height: 26px; width: auto; object-fit: contain; }
+  .nav-item {
+    padding: 7px 14px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.25s var(--spring);
+    border: 1px solid transparent;
+    background: none;
+    letter-spacing: 0.01em;
+  }
+  .nav-item:hover { color: var(--text); background: var(--glass2); }
+  .nav-item.active { color: var(--gold); background: var(--gold-dim); border-color: var(--border-gold); }
+  .nav-cta {
+    margin-left: 8px;
+    padding: 8px 18px;
+    border-radius: 100px;
+    background: var(--gold);
+    color: #0c0c0e;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s var(--spring);
+    border: none;
+  }
+  .nav-cta:hover { background: var(--gold-light); transform: scale(1.03); }
+  .nav-cta:active { transform: scale(0.97); }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  /* ── PAGE SYSTEM ── */
+  .page { display: none; }
+  .page.active { display: block; }
 
-    html { scroll-behavior: smooth; }
+  /* ══════════════════════════════════
+     HERO: 드론 영상 풀스크린
+  ══════════════════════════════════ */
+  .hero-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    background: #000;
+  }
+  #hero-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    filter: brightness(0.65) saturate(0.9);
+    will-change: transform;
+  }
+  .hero-gradient {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(0deg, rgba(12,12,14,1) 0%, rgba(12,12,14,0.3) 25%, transparent 55%),
+      linear-gradient(180deg, rgba(12,12,14,0.5) 0%, transparent 20%);
+    pointer-events: none;
+  }
+  .hero-content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0 6vw 80px;
+  }
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 100px;
+    border: 1px solid var(--border-gold);
+    background: var(--gold-dim);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gold);
+    letter-spacing: 0.08em;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    width: fit-content;
+    backdrop-filter: blur(8px);
+  }
+  .hero-tag-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--gold);
+    animation: dot-pulse 2s infinite;
+  }
+  @keyframes dot-pulse {
+    0%,100% { opacity:1; transform:scale(1); }
+    50% { opacity:0.4; transform:scale(0.7); }
+  }
+  .hero-title {
+    font-size: clamp(44px, 7vw, 88px);
+    font-weight: 900;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    margin-bottom: 20px;
+    text-shadow: 0 2px 40px rgba(0,0,0,0.5);
+    max-width: 680px;
+  }
+  .hero-title em {
+    font-style: normal;
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 60%, #f5dfa0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-sub {
+    font-size: clamp(15px, 1.8vw, 18px);
+    line-height: 1.7;
+    color: rgba(240,237,232,0.8);
+    margin-bottom: 36px;
+    max-width: 520px;
+  }
+  .hero-btns { display: flex; gap: 12px; flex-wrap: wrap; }
+  .hero-scroll-hint {
+    position: absolute;
+    bottom: 28px;
+    right: 6vw;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .scroll-line {
+    width: 32px; height: 1px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.2), rgba(201,165,90,0.5));
+    position: relative;
+    overflow: hidden;
+  }
+  .scroll-line::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: var(--gold);
+    animation: scroll-travel 1.8s ease-in-out infinite;
+  }
+  @keyframes scroll-travel {
+    0% { left: -100%; }
+    100% { left: 100%; }
+  }
 
-    body {
-      font-family: 'Noto Sans KR', sans-serif;
-      background: var(--bg);
-      color: var(--dark);
-      padding-top: var(--nav-h);
-    }
+  /* ═══════════════════════════════════════════
+     SCROLL ANIMATION SECTION (WebP 프레임)
+  ═══════════════════════════════════════════ */
+  .scroll-anim-outer {
+    position: relative;
+    height: 280vh; /* 스크롤 범위 */
+    background: var(--bg);
+  }
+  .scroll-anim-sticky {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #scroll-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    will-change: contents;
+  }
+  .scroll-overlay-gradient {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(0deg, rgba(12,12,14,1) 0%, rgba(12,12,14,0.4) 15%, transparent 40%, transparent 65%, rgba(12,12,14,0.4) 85%, rgba(12,12,14,0.8) 100%);
+    pointer-events: none;
+  }
+  .scroll-anim-text {
+    position: absolute;
+    bottom: 80px;
+    left: 6vw;
+    right: 6vw;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .scroll-headline {
+    font-size: clamp(28px, 4vw, 52px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    text-shadow: 0 2px 30px rgba(0,0,0,0.6);
+  }
+  .scroll-headline em {
+    font-style: normal;
+    color: var(--gold);
+  }
+  .scroll-progress-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .scroll-progress-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .scroll-progress-bar {
+    width: 120px; height: 2px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .scroll-progress-fill {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 2px;
+    transform-origin: left;
+    transform: scaleX(0);
+    transition: transform 0.05s linear;
+  }
+  /* Frame loading overlay */
+  #frame-loader {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 9000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    transition: opacity 0.6s ease;
+  }
+  #frame-loader.hidden { opacity: 0; pointer-events: none; }
+  .loader-logo { font-size: 22px; font-weight: 800; color: var(--gold); letter-spacing: 0.1em; }
+  .loader-bar-wrap { width: 200px; height: 2px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+  .loader-bar { height: 100%; background: var(--gold); border-radius: 2px; width: 0%; transition: width 0.3s ease; }
+  .loader-text { font-size: 12px; color: var(--text-dim); letter-spacing: 0.1em; }
 
-    a { text-decoration: none; color: inherit; }
-    img { display: block; width: 100%; }
-    button { cursor: pointer; border: none; font-family: inherit; }
+  /* ── BUTTONS ── */
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 16px 28px; border-radius: 100px;
+    background: var(--gold); color: #0c0c0e;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    transition: all 0.3s var(--spring); border: none;
+    font-family: inherit;
+  }
+  .btn-primary:hover { background: var(--gold-light); transform: translateY(-2px) scale(1.02); box-shadow: 0 12px 40px rgba(201,165,90,0.4); }
+  .btn-primary:active { transform: translateY(0) scale(0.98); }
+  .btn-primary:focus { outline: 2px solid var(--gold); outline-offset: 3px; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn-icon { width: 34px; height: 34px; border-radius: 50%; background: rgba(12,12,14,0.25); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .btn-secondary {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 16px 28px; border-radius: 100px;
+    background: rgba(255,255,255,0.08); color: var(--text);
+    font-size: 15px; font-weight: 600; cursor: pointer;
+    transition: all 0.3s var(--spring); border: 1px solid rgba(255,255,255,0.15);
+    font-family: inherit; backdrop-filter: blur(8px);
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.14); transform: translateY(-2px); }
+  .btn-secondary:active { transform: translateY(0) scale(0.98); }
+  .btn-secondary:focus { outline: 2px solid var(--text-dim); outline-offset: 3px; }
 
-    /* ── Page visibility ── */
-    .page { display: none; }
-    .page.active { display: block; }
+  /* ── SECTIONS ── */
+  section { padding: 100px 6vw; }
+  .section-tag {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 700; color: var(--gold);
+    letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 16px;
+  }
+  .section-tag::before { content: ''; display: block; width: 20px; height: 1px; background: var(--gold); }
+  .section-title { font-size: clamp(28px, 3.5vw, 46px); font-weight: 800; letter-spacing: -0.025em; line-height: 1.15; margin-bottom: 16px; }
+  .section-sub { font-size: 16px; color: var(--text-dim); line-height: 1.75; max-width: 500px; margin-bottom: 52px; }
+  .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); margin: 0 6vw; }
 
-    /* ── NAV ── */
-    #main-nav {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      height: var(--nav-h);
-      background: #fff;
-      border-bottom: 1px solid var(--border);
-      z-index: 100;
-      display: flex;
-      align-items: center;
-    }
-    .nav-inner {
-      max-width: 1140px;
-      margin: 0 auto;
-      padding: 0 24px;
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .nav-logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      cursor: pointer;
-    }
-    .nav-logo img {
-      height: 42px;
-      width: auto;
-    }
-    .nav-logo-txt { line-height: 1.15; }
-    .nav-logo-txt .en {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: var(--sage-dark);
-      letter-spacing: 0.15em;
-    }
-    .nav-logo-txt .kr {
-      font-size: 0.6rem;
-      color: var(--mid);
-      letter-spacing: 0.08em;
-    }
-    .nav-menu {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      list-style: none;
-    }
-    .nav-menu li button {
-      background: none;
-      font-size: 0.88rem;
-      color: var(--dark);
-      padding: 6px 16px;
-      border-radius: 2px;
-      transition: color 0.2s;
-      font-weight: 400;
-      white-space: nowrap;
-    }
-    .nav-menu li button:hover,
-    .nav-menu li button.active { color: var(--sage); font-weight: 500; }
-    .nav-cta {
-      background: var(--sage-dark);
-      color: #fff;
-      font-size: 0.82rem;
-      font-weight: 500;
-      padding: 9px 20px;
-      border-radius: 2px;
-      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
-      white-space: nowrap;
-      letter-spacing: 0.02em;
-    }
-    .nav-cta:hover {
-      background: #2e3d20;
-      transform: translateY(-1px);
-      box-shadow: 0 3px 10px rgba(0,0,0,0.18);
-    }
-    .nav-cta:active { transform: translateY(0); }
-    /* Mobile hamburger */
-    .nav-ham {
-      display: none;
-      background: none;
-      padding: 6px;
-      color: var(--dark);
-    }
-    .mobile-menu {
-      display: none;
-      position: fixed;
-      top: var(--nav-h);
-      left: 0; right: 0;
-      background: #fff;
-      border-bottom: 1px solid var(--border);
-      z-index: 99;
-      padding: 16px 24px;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .mobile-menu.open { display: flex; }
-    .mobile-menu button {
-      background: none;
-      text-align: left;
-      padding: 12px 8px;
-      font-size: 0.95rem;
-      color: var(--dark);
-      border-bottom: 1px solid var(--border);
-    }
+  /* ── STATS ROW ── */
+  .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+  .stat-box {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 18px;
+    padding: 28px 24px; position: relative; overflow: hidden;
+    transition: transform 0.35s var(--spring), box-shadow 0.35s var(--spring);
+  }
+  .stat-box:hover { transform: translateY(-4px); box-shadow: 0 16px 50px rgba(0,0,0,0.35); }
+  .stat-box::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+    height: 2px; background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .stat-box:hover::after { opacity: 1; }
+  .stat-box-num { font-size: 38px; font-weight: 900; color: var(--gold); letter-spacing: -0.04em; line-height: 1; margin-bottom: 8px; }
+  .stat-box-label { font-size: 13px; color: var(--text-dim); }
 
-    /* ── PAGE HEADER ── */
-    .page-header {
-      background: linear-gradient(rgba(30,40,20,0.72), rgba(30,40,20,0.72)),
-                  url('https://placehold.co/1920x400/3a4a30/3a4a30?text=') center/cover no-repeat;
-      min-height: 200px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      text-align: center;
-      padding: 48px 24px;
-    }
-    .page-header .label {
-      font-size: 0.7rem;
-      letter-spacing: 0.35em;
-      color: var(--sage-light);
-      margin-bottom: 12px;
-      text-transform: uppercase;
-    }
-    .page-header h1 {
-      font-family: 'Noto Serif KR', serif;
-      font-size: clamp(1.8rem, 4vw, 2.8rem);
-      font-weight: 700;
-      color: #fff;
-      letter-spacing: 0.04em;
-    }
-    .breadcrumb {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 16px;
-      font-size: 0.78rem;
-      color: rgba(255,255,255,0.55);
-    }
-    .breadcrumb span { color: rgba(255,255,255,0.55); }
-    .breadcrumb .current { color: var(--sage-light); }
+  /* ── BENTO GRID ── */
+  .bento { display: grid; grid-template-columns: 2fr 1.2fr; gap: 16px; }
+  .bento-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 22px;
+    overflow: hidden; position: relative;
+    transition: transform 0.4s var(--spring), box-shadow 0.4s var(--spring), border-color 0.3s;
+  }
+  .bento-card:hover { transform: translateY(-5px); box-shadow: 0 24px 64px rgba(0,0,0,0.45), 0 0 0 1px var(--border-gold); border-color: var(--border-gold); }
+  .bento-card::before {
+    content: ''; position: absolute; inset: 0; border-radius: 22px;
+    background: linear-gradient(145deg, rgba(255,255,255,0.025) 0%, transparent 50%);
+    pointer-events: none; z-index: 1;
+  }
+  .bento-main { grid-row: 1 / 3; }
+  .bento-img { width: 100%; height: 300px; object-fit: cover; display: block; transition: transform 0.6s var(--spring); }
+  .bento-card:hover .bento-img { transform: scale(1.04); }
+  .bento-main .bento-img { height: 420px; }
+  .bento-body { padding: 28px 28px 32px; }
+  .bento-icon-wrap {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: var(--gold-dim); border: 1px solid var(--border-gold);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px; color: var(--gold); font-size: 22px;
+  }
+  .bento-title { font-size: 19px; font-weight: 700; margin-bottom: 10px; line-height: 1.35; }
+  .bento-desc { font-size: 14px; color: var(--text-dim); line-height: 1.7; }
+  .bento-badge {
+    display: inline-block; padding: 4px 12px; border-radius: 100px;
+    background: var(--gold-dim); border: 1px solid var(--border-gold);
+    font-size: 11px; font-weight: 700; color: var(--gold);
+    letter-spacing: 0.06em; margin-top: 14px;
+  }
 
-    /* ── CONTENT CONTAINER ── */
-    .cont {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 0 24px;
-    }
+  /* ── LOCATION ── */
+  .location-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; }
+  .location-map { border-radius: 20px; overflow: hidden; border: 1px solid var(--border); position: relative; }
+  .location-map img { width: 100%; height: 400px; object-fit: cover; display: block; filter: saturate(0.5) brightness(0.6); transition: filter 0.4s; }
+  .location-map:hover img { filter: saturate(0.7) brightness(0.75); }
+  .location-map-overlay { position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(201,165,90,0.12) 0%, transparent 65%); }
+  .location-pin {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    width: 50px; height: 50px; border-radius: 50%;
+    background: var(--gold); display: flex; align-items: center; justify-content: center;
+    color: #0c0c0e; font-size: 22px;
+    box-shadow: 0 0 0 14px rgba(201,165,90,0.18), 0 0 0 28px rgba(201,165,90,0.07);
+    animation: pin-pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pin-pulse {
+    0%,100% { box-shadow: 0 0 0 14px rgba(201,165,90,0.18), 0 0 0 28px rgba(201,165,90,0.07); }
+    50% { box-shadow: 0 0 0 18px rgba(201,165,90,0.12), 0 0 0 36px rgba(201,165,90,0.04); }
+  }
+  .transport-list { display: flex; flex-direction: column; gap: 12px; }
+  .transport-item {
+    display: flex; align-items: center; gap: 16px;
+    padding: 18px 20px; background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 14px; transition: all 0.3s var(--spring); cursor: default;
+  }
+  .transport-item:hover { border-color: var(--border-gold); background: var(--bg3); transform: translateX(4px); }
+  .transport-icon {
+    width: 42px; height: 42px; border-radius: 11px;
+    background: var(--gold-dim); border: 1px solid var(--border-gold);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--gold); font-size: 20px; flex-shrink: 0;
+  }
+  .transport-name { font-size: 15px; font-weight: 600; margin-bottom: 3px; }
+  .transport-time { font-size: 13px; color: var(--text-dim); }
 
-    /* ── SECTION LABEL ── */
-    .sec-label {
-      font-size: 0.68rem;
-      letter-spacing: 0.35em;
-      color: var(--sage);
-      text-transform: uppercase;
-      margin-bottom: 10px;
-    }
-    .sec-title {
-      font-family: 'Noto Serif KR', serif;
-      font-size: clamp(1.5rem, 3vw, 2.2rem);
-      font-weight: 700;
-      color: var(--dark);
-      line-height: 1.3;
-    }
-    .sec-sub {
-      font-size: 0.9rem;
-      color: var(--mid);
-      line-height: 1.8;
-      margin-top: 14px;
-    }
+  /* ── INTERIOR GALLERY ── */
+  .interior-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; }
+  .interior-card { border-radius: 18px; overflow: hidden; position: relative; }
+  .interior-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s var(--spring); }
+  .interior-card:hover img { transform: scale(1.05); }
+  .interior-sub { display: flex; flex-direction: column; gap: 16px; }
+  .interior-label {
+    position: absolute; bottom: 16px; left: 16px;
+    background: rgba(12,12,14,0.8); backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
+    padding: 6px 14px; border-radius: 100px;
+    font-size: 12px; font-weight: 600; color: var(--text);
+    letter-spacing: 0.06em;
+  }
 
-    /* ── DIVIDER ── */
-    .line {
-      height: 1px;
-      background: var(--border);
-      margin: 0;
-    }
-    .line-sage {
-      height: 2px;
-      background: var(--sage);
-      width: 40px;
-      margin-bottom: 20px;
-    }
+  /* ── UNIT BADGE & TABLE ── */
+  .unit-badge { display: inline-block; padding: 4px 12px; border-radius: 100px; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; }
+  .badge-gold { background: var(--gold-dim); color: var(--gold); border: 1px solid var(--border-gold); }
+  .badge-blue { background: rgba(96,165,250,0.12); color: #93c5fd; border: 1px solid rgba(96,165,250,0.2); }
+  .badge-green { background: rgba(74,222,128,0.1); color: #86efac; border: 1px solid rgba(74,222,128,0.15); }
+  .unit-table { width: 100%; border-collapse: collapse; }
+  .unit-table th { font-size: 12px; font-weight: 600; color: var(--text-dim); letter-spacing: 0.06em; text-transform: uppercase; padding: 12px 20px; border-bottom: 1px solid var(--border); text-align: left; }
+  .unit-table td { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 15px; }
+  .unit-table tr:hover td { background: var(--glass); }
 
-    /* ══════════════════════════════
-       HOME PAGE
-    ══════════════════════════════ */
+  /* ── PREMIUM GRID ── */
+  .premium-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+  .premium-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 22px;
+    padding: 34px 30px; position: relative; overflow: hidden;
+    transition: all 0.4s var(--spring);
+  }
+  .premium-card:hover { transform: translateY(-7px); border-color: var(--border-gold); box-shadow: 0 28px 70px rgba(0,0,0,0.45); }
+  .premium-card::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+    opacity: 0; transition: opacity 0.4s;
+  }
+  .premium-card:hover::after { opacity: 1; }
+  .premium-num { font-size: 52px; font-weight: 900; color: rgba(201,165,90,0.08); letter-spacing: -0.04em; position: absolute; top: 16px; right: 20px; line-height: 1; }
+  .premium-icon { width: 52px; height: 52px; border-radius: 14px; background: var(--gold-dim); border: 1px solid var(--border-gold); display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 26px; margin-bottom: 20px; }
+  .premium-title { font-size: 19px; font-weight: 700; margin-bottom: 10px; }
+  .premium-desc { font-size: 14px; color: var(--text-dim); line-height: 1.75; }
+  .premium-list-items { margin-top: 18px; display: flex; flex-direction: column; gap: 9px; }
+  .premium-li { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--text-dim); }
+  .premium-li::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
 
-    /* Hero */
-    .hero {
-      position: relative;
-      height: calc(100vh - var(--nav-h));
-      min-height: 520px;
-      background: url('https://placehold.co/1920x900/2a3520/2a3520?text=') center/cover no-repeat;
-      overflow: hidden;
-    }
-    .hero::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to bottom, rgba(20,30,12,0.25) 0%, rgba(20,30,12,0.65) 100%);
-    }
-    .hero-text {
-      position: absolute;
-      bottom: 14%;
-      left: 50%;
-      transform: translateX(-50%);
-      text-align: center;
-      width: 100%;
-      padding: 0 24px;
-    }
-    .hero-sub {
-      font-size: 0.75rem;
-      letter-spacing: 0.35em;
-      color: rgba(255,255,255,0.7);
-      margin-bottom: 14px;
-    }
-    .hero-title {
-      font-family: 'Noto Serif KR', serif;
-      font-size: clamp(2rem, 5vw, 3.5rem);
-      font-weight: 900;
-      color: #fff;
-      line-height: 1.2;
-      text-shadow: 0 2px 20px rgba(0,0,0,0.4);
-    }
-    .hero-brand {
-      margin-top: 20px;
-    }
-    .hero-brand .en {
-      font-size: clamp(1.4rem, 3.5vw, 2.2rem);
-      font-weight: 700;
-      color: #fff;
-      letter-spacing: 0.25em;
-      opacity: 0.9;
-    }
-    .hero-brand .kr {
-      font-size: 0.8rem;
-      color: rgba(255,255,255,0.6);
-      letter-spacing: 0.2em;
-      margin-top: 4px;
-    }
-    .hero-notice {
-      margin-top: 18px;
-      font-size: 0.78rem;
-      color: rgba(255,255,255,0.55);
-      letter-spacing: 0.04em;
-    }
+  /* ── NOTICE ── */
+  .notice-list { display: flex; flex-direction: column; gap: 0; }
+  .notice-item {
+    display: flex; align-items: center; gap: 20px;
+    padding: 20px 24px; border-radius: 10px; cursor: pointer;
+    transition: background 0.2s; border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .notice-item:hover { background: var(--glass); }
+  .notice-type { flex-shrink: 0; padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; }
+  .type-notice { background: var(--gold-dim); color: var(--gold); }
+  .type-news { background: rgba(96,165,250,0.12); color: #93c5fd; }
+  .notice-title { flex: 1; font-size: 15px; font-weight: 500; }
+  .notice-date { font-size: 13px; color: var(--text-dim); flex-shrink: 0; }
 
-    /* Feature strip */
-    .feat-strip {
-      background: var(--sage-strip);
-      padding: 28px 0;
-    }
-    .feat-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 0 24px;
-      gap: 0;
-    }
-    .feat-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      padding: 10px 12px;
-      border-right: 1px solid rgba(255,255,255,0.2);
-      gap: 8px;
-    }
-    .feat-item:last-child { border-right: none; }
-    .feat-icon {
-      width: 42px;
-      height: 42px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .feat-icon svg { width: 34px; height: 34px; stroke: #fff; fill: none; stroke-width: 1.5; stroke-linecap: round; }
-    .feat-name {
-      font-size: 0.78rem;
-      font-weight: 500;
-      color: #fff;
-      line-height: 1.4;
-    }
-    .feat-val {
-      font-size: 0.7rem;
-      color: rgba(255,255,255,0.75);
-    }
+  /* ── FORM ── */
+  .form-card {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 26px;
+    padding: 48px; max-width: 640px; margin: 0 auto;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.4);
+  }
+  .form-label { display: block; font-size: 12px; font-weight: 700; color: var(--text-dim); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
+  .form-input {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px; font-size: 15px; color: var(--text);
+    font-family: inherit; transition: all 0.25s; outline: none; margin-bottom: 20px;
+  }
+  .form-input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,165,90,0.12); }
+  .form-input::placeholder { color: var(--text-dim); opacity: 0.45; }
+  select.form-input { cursor: pointer; }
+  select.form-input option { background: var(--bg3); }
+  textarea.form-input { resize: vertical; min-height: 120px; }
 
-    /* PERFECT PREMIUM section */
-    .pp-section {
-      padding: 72px 0;
-      background: #fff;
-    }
-    .pp-inner {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 0 24px;
-      display: grid;
-      grid-template-columns: 1fr 1.6fr;
-      gap: 56px;
-      align-items: center;
-    }
-    .pp-label {
-      font-size: 0.65rem;
-      letter-spacing: 0.4em;
-      color: var(--sage);
-      margin-bottom: 10px;
-    }
-    .pp-txt .tag {
-      font-size: 0.78rem;
-      color: var(--mid);
-      margin-bottom: 8px;
-    }
-    .pp-title {
-      font-family: 'Noto Serif KR', serif;
-      font-size: clamp(1.6rem, 3vw, 2.4rem);
-      font-weight: 700;
-      color: var(--dark);
-      line-height: 1.25;
-      margin-bottom: 24px;
-    }
-    .pp-more {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.82rem;
-      color: var(--sage-dark);
-      border-bottom: 1px solid var(--sage-dark);
-      padding-bottom: 2px;
-      transition: gap 0.2s;
-    }
-    .pp-more:hover { gap: 12px; }
-    .pp-images {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-    }
-    .pp-img-card {
-      position: relative;
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    .pp-img-card img {
-      width: 100%;
-      height: 220px;
-      object-fit: cover;
-    }
-    .pp-img-label {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: linear-gradient(transparent, rgba(0,0,0,0.7));
-      padding: 28px 14px 14px;
-      color: #fff;
-    }
-    .pp-img-label .tag {
-      font-size: 0.62rem;
-      letter-spacing: 0.2em;
-      color: var(--sage-light);
-      margin-bottom: 4px;
-    }
-    .pp-img-label .name {
-      font-size: 0.82rem;
-      font-weight: 500;
-    }
-    /* Slider dots */
-    .pp-dots {
-      display: flex;
-      gap: 6px;
-      margin-top: 28px;
-    }
-    .pp-dot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--border);
-      transition: background 0.2s;
-    }
-    .pp-dot.active { background: var(--sage); }
+  /* ── FOOTER ── */
+  footer { background: var(--bg2); border-top: 1px solid var(--border); padding: 60px 6vw 44px; }
+  .footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 60px; margin-bottom: 48px; }
+  .footer-brand { font-size: 20px; font-weight: 800; color: var(--gold); letter-spacing: 0.07em; margin-bottom: 14px; }
+  .footer-desc { font-size: 13px; color: var(--text-dim); line-height: 1.8; }
+  .footer-h { font-size: 11px; font-weight: 700; color: var(--text-dim); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 16px; }
+  .footer-link { display: block; font-size: 14px; color: var(--text-dim); margin-bottom: 10px; cursor: pointer; transition: color 0.2s; }
+  .footer-link:hover { color: var(--text); }
+  .footer-bottom { border-top: 1px solid var(--border); padding-top: 28px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--text-dim); }
 
-    /* ══════════════════════════════
-       사업안내 PAGE
-    ══════════════════════════════ */
-    .biz-section {
-      padding: 72px 0;
-    }
-    .biz-head {
-      text-align: center;
-      margin-bottom: 56px;
-      padding: 0 24px;
-    }
-    .biz-head .big {
-      font-family: 'Noto Serif KR', serif;
-      font-size: clamp(1.4rem, 3vw, 2rem);
-      font-weight: 700;
-      line-height: 1.4;
-      margin-bottom: 8px;
-    }
-    .biz-head .brand-name {
-      font-size: 1rem;
-      color: var(--sage);
-      font-weight: 500;
-      letter-spacing: 0.08em;
-    }
-    .biz-img-wrap {
-      margin-bottom: 56px;
-    }
-    .biz-img-wrap img {
-      width: 100%;
-      max-height: 420px;
-      object-fit: cover;
-    }
-    .spec-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.88rem;
-    }
-    .spec-table tr {
-      border-bottom: 1px solid var(--border);
-    }
-    .spec-table tr:first-child {
-      border-top: 2px solid var(--sage);
-    }
-    .spec-table th {
-      width: 160px;
-      background: #f0f0eb;
-      padding: 14px 20px;
-      text-align: left;
-      color: var(--mid);
-      font-weight: 500;
-      vertical-align: top;
-    }
-    .spec-table td {
-      padding: 14px 20px;
-      color: var(--dark);
-      line-height: 1.7;
-    }
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 32px; right: 32px; z-index: 9999;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px 24px; font-size: 14px; font-weight: 500;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    transform: translateY(20px); opacity: 0;
+    transition: all 0.4s var(--spring);
+    display: flex; align-items: center; gap: 10px;
+    pointer-events: none;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast.success { border-color: var(--border-gold); color: var(--gold); }
+  #toast.error { border-color: rgba(248,113,113,0.3); color: #fca5a5; }
 
-    /* ══════════════════════════════
-       프리미엄 PAGE
-    ══════════════════════════════ */
-    .prem-section {
-      padding: 72px 0;
-    }
-    .prem-head {
-      text-align: center;
-      margin-bottom: 48px;
-    }
-    .prem-head .big {
-      font-family: 'Noto Serif KR', serif;
-      font-size: clamp(1.4rem, 3vw, 2rem);
-      font-weight: 700;
-      line-height: 1.4;
-    }
-    .prem-sub {
-      font-size: 0.88rem;
-      color: var(--mid);
-      margin-top: 14px;
-      line-height: 1.8;
-    }
-    .prem-map {
-      margin-bottom: 56px;
-    }
-    .prem-map img {
-      width: 100%;
-      max-height: 380px;
-      object-fit: cover;
-      border: 1px solid var(--border);
-    }
-    .prem-feature {
-      padding: 36px 0;
-      border-bottom: 1px solid var(--border);
-      display: grid;
-      grid-template-columns: 200px 1fr;
-      gap: 40px;
-      align-items: start;
-    }
-    .prem-feature:last-child { border-bottom: none; }
-    .prem-feature .ph {
-      border-radius: 4px;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-    .prem-feature .ph img {
-      width: 200px;
-      height: 140px;
-      object-fit: cover;
-    }
-    .prem-feature .txt-tag {
-      font-size: 0.68rem;
-      letter-spacing: 0.25em;
-      color: var(--sage);
-      margin-bottom: 8px;
-    }
-    .prem-feature h3 {
-      font-family: 'Noto Serif KR', serif;
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: var(--dark);
-      margin-bottom: 10px;
-      line-height: 1.4;
-    }
-    .prem-feature p {
-      font-size: 0.85rem;
-      color: var(--mid);
-      line-height: 1.8;
-    }
+  /* ── FADE UP ── */
+  .fade-up { opacity: 0; transform: translateY(28px); transition: opacity 0.75s var(--spring), transform 0.75s var(--spring); }
+  .fade-up.visible { opacity: 1; transform: translateY(0); }
+  .delay-1 { transition-delay: 0.1s; }
+  .delay-2 { transition-delay: 0.2s; }
+  .delay-3 { transition-delay: 0.3s; }
 
-    /* ══════════════════════════════
-       세대정보 PAGE
-    ══════════════════════════════ */
-    .units-section {
-      padding: 72px 0;
-    }
-    .units-head {
-      text-align: center;
-      margin-bottom: 48px;
-    }
-    .units-head .big {
-      font-family: 'Noto Serif KR', serif;
-      font-size: clamp(1.4rem, 3vw, 2rem);
-      font-weight: 700;
-    }
-    .units-head .sub {
-      font-size: 0.88rem;
-      color: var(--mid);
-      margin-top: 10px;
-    }
-    .unit-tabs {
-      display: flex;
-      gap: 0;
-      margin-bottom: 48px;
-      border-bottom: 2px solid var(--border);
-    }
-    .unit-tab {
-      background: none;
-      padding: 12px 28px;
-      font-size: 0.9rem;
-      color: var(--light);
-      border-bottom: 2px solid transparent;
-      margin-bottom: -2px;
-      font-weight: 400;
-      transition: color 0.2s, border-color 0.2s;
-    }
-    .unit-tab.active {
-      color: var(--sage-dark);
-      border-bottom-color: var(--sage-dark);
-      font-weight: 600;
-    }
-    .unit-panel { display: none; }
-    .unit-panel.active { display: block; }
-    .unit-layout {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 56px;
-      align-items: start;
-    }
-    .unit-plan img {
-      width: 100%;
-      border: 1px solid var(--border);
-      background: #f9f9f6;
-    }
-    .unit-info-label {
-      font-size: 0.7rem;
-      letter-spacing: 0.2em;
-      color: var(--sage);
-      margin-bottom: 6px;
-    }
-    .unit-type-name {
-      font-family: 'Noto Serif KR', serif;
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--dark);
-      margin-bottom: 24px;
-      line-height: 1;
-    }
-    .unit-spec-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.86rem;
-    }
-    .unit-spec-table tr {
-      border-bottom: 1px solid var(--border);
-    }
-    .unit-spec-table tr:first-child {
-      border-top: 2px solid var(--sage);
-    }
-    .unit-spec-table th {
-      background: #f0f0eb;
-      padding: 11px 16px;
-      text-align: left;
-      color: var(--mid);
-      font-weight: 500;
-      width: 120px;
-    }
-    .unit-spec-table td {
-      padding: 11px 16px;
-      color: var(--dark);
-    }
-    .unit-price-box {
-      margin-top: 20px;
-      background: #f0f0eb;
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--sage);
-      padding: 16px 20px;
-      border-radius: 0 4px 4px 0;
-    }
-    .unit-price-box .price-label {
-      font-size: 0.75rem;
-      color: var(--mid);
-      margin-bottom: 4px;
-    }
-    .unit-price-box .price {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--dark);
-    }
-
-    /* ══════════════════════════════
-       단지정보 PAGE
-    ══════════════════════════════ */
-    .complex-section {
-      padding: 72px 0;
-    }
-    .complex-head {
-      text-align: center;
-      margin-bottom: 56px;
-    }
-    .complex-head .big {
-      font-family: 'Noto Serif KR', serif;
-      font-size: clamp(1.4rem, 3vw, 2rem);
-      font-weight: 700;
-      line-height: 1.4;
-    }
-    .complex-head .sub {
-      font-size: 0.88rem;
-      color: var(--mid);
-      margin-top: 10px;
-      line-height: 1.8;
-    }
-    .complex-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-      margin-bottom: 56px;
-    }
-    .complex-card {
-      border: 1px solid var(--border);
-      border-top: 3px solid var(--sage);
-      background: #fff;
-      padding: 28px 24px;
-      border-radius: 0 0 4px 4px;
-    }
-    .complex-card .icon {
-      width: 40px;
-      height: 40px;
-      margin-bottom: 14px;
-    }
-    .complex-card .icon svg {
-      width: 40px;
-      height: 40px;
-      stroke: var(--sage);
-      fill: none;
-      stroke-width: 1.5;
-      stroke-linecap: round;
-    }
-    .complex-card h3 {
-      font-weight: 700;
-      font-size: 0.95rem;
-      color: var(--dark);
-      margin-bottom: 8px;
-    }
-    .complex-card p {
-      font-size: 0.82rem;
-      color: var(--mid);
-      line-height: 1.7;
-    }
-    .complex-img { margin-bottom: 48px; }
-    .complex-img img {
-      width: 100%;
-      max-height: 360px;
-      object-fit: cover;
-      border: 1px solid var(--border);
-    }
-
-    /* ══════════════════════════════
-       게시판 PAGE
-    ══════════════════════════════ */
-    .board-section {
-      padding: 72px 0;
-    }
-    .board-form-wrap {
-      max-width: 720px;
-      margin: 0 auto;
-    }
-    .board-form-row {
-      display: grid;
-      grid-template-columns: 120px 1fr;
-      align-items: center;
-      border-bottom: 1px solid var(--border);
-    }
-    .board-form-row:first-child {
-      border-top: 2px solid var(--sage);
-    }
-    .board-form-row label {
-      font-size: 0.85rem;
-      color: var(--mid);
-      font-weight: 500;
-      padding: 14px 16px;
-      background: #f4f4ef;
-      align-self: stretch;
-      display: flex;
-      align-items: center;
-    }
-    .board-form-row input,
-    .board-form-row textarea {
-      font-family: 'Noto Sans KR', sans-serif;
-      font-size: 0.88rem;
-      border: none;
-      background: transparent;
-      padding: 14px 16px;
-      width: 100%;
-      color: var(--dark);
-      outline: none;
-      transition: background 0.2s;
-    }
-    .board-form-row input:focus,
-    .board-form-row textarea:focus {
-      background: rgba(122,141,105,0.06);
-    }
-    .board-form-row textarea {
-      min-height: 140px;
-      resize: vertical;
-      align-self: stretch;
-    }
-    .board-notice {
-      font-size: 0.78rem;
-      color: var(--light);
-      line-height: 1.7;
-      margin: 24px 0;
-      padding: 16px;
-      background: #f4f4ef;
-      border-left: 3px solid var(--border);
-    }
-    .board-btns {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 24px;
-    }
-    .btn-reset {
-      background: var(--border);
-      color: var(--mid);
-      font-size: 0.88rem;
-      padding: 11px 32px;
-      border-radius: 2px;
-      transition: background 0.2s;
-    }
-    .btn-reset:hover { background: #ccc; }
-    .btn-submit {
-      background: var(--sage-dark);
-      color: #fff;
-      font-size: 0.88rem;
-      font-weight: 600;
-      padding: 11px 40px;
-      border-radius: 2px;
-      transition: background 0.2s, transform 0.15s;
-    }
-    .btn-submit:hover { background: #2e3d20; transform: translateY(-1px); }
-    .btn-submit:active { transform: translateY(0); }
-    .btn-submit:focus { outline: none; box-shadow: 0 0 0 3px rgba(63,84,48,0.3); }
-    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-    .board-success {
-      display: none;
-      text-align: center;
-      padding: 28px;
-      background: rgba(122,141,105,0.1);
-      border: 1px solid var(--sage-light);
-      border-radius: 4px;
-      margin-top: 20px;
-    }
-    .board-success .ok { font-size: 1.1rem; font-weight: 600; color: var(--sage-dark); margin-bottom: 6px; }
-    .board-success .msg { font-size: 0.88rem; color: var(--mid); }
-
-    /* ══════════════════════════════
-       FOOTER
-    ══════════════════════════════ */
-    footer {
-      background: #1e2318;
-      padding: 40px 0 32px;
-    }
-    .footer-inner {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 0 24px;
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 32px;
-      align-items: center;
-    }
-    .footer-logo .en {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: #fff;
-      letter-spacing: 0.15em;
-    }
-    .footer-logo .kr {
-      font-size: 0.65rem;
-      color: rgba(255,255,255,0.45);
-      letter-spacing: 0.1em;
-      margin-top: 2px;
-    }
-    .footer-info {
-      font-size: 0.75rem;
-      color: rgba(255,255,255,0.45);
-      line-height: 1.9;
-    }
-    .footer-info strong { color: rgba(255,255,255,0.65); }
-    .footer-phone {
-      font-size: 1.3rem;
-      font-weight: 700;
-      color: #fff;
-      letter-spacing: 0.03em;
-      white-space: nowrap;
-    }
-    .footer-phone small {
-      display: block;
-      font-size: 0.7rem;
-      font-weight: 400;
-      color: rgba(255,255,255,0.45);
-      letter-spacing: 0.1em;
-      margin-top: 3px;
-      text-align: right;
-    }
-    .footer-copy {
-      max-width: 1100px;
-      margin: 24px auto 0;
-      padding: 20px 24px 0;
-      border-top: 1px solid rgba(255,255,255,0.1);
-      font-size: 0.72rem;
-      color: rgba(255,255,255,0.25);
-      line-height: 1.7;
-    }
-
-    /* ══════════════════════════════
-       RESPONSIVE
-    ══════════════════════════════ */
-    @media (max-width: 900px) {
-      .nav-menu, .nav-cta { display: none; }
-      .nav-ham { display: block; }
-      .pp-inner { grid-template-columns: 1fr; }
-      .pp-images { grid-template-columns: 1fr 1fr; }
-      .feat-grid { grid-template-columns: repeat(2, 1fr); }
-      .feat-item:nth-child(2) { border-right: none; }
-      .prem-feature { grid-template-columns: 1fr; gap: 20px; }
-      .prem-feature .ph img { width: 100%; height: 200px; }
-      .unit-layout { grid-template-columns: 1fr; }
-      .complex-grid { grid-template-columns: 1fr 1fr; }
-      .footer-inner { grid-template-columns: 1fr; text-align: center; }
-      .footer-phone small { text-align: center; }
-      .spec-table th { width: 120px; }
-    }
-    @media (max-width: 600px) {
-      .feat-grid { grid-template-columns: repeat(2, 1fr); }
-      .pp-images { grid-template-columns: 1fr; }
-      .complex-grid { grid-template-columns: 1fr; }
-      .board-form-row { grid-template-columns: 1fr; }
-      .board-form-row label { border-bottom: 1px solid var(--border); }
-      .spec-table th { width: 90px; font-size: 0.8rem; }
-    }
-  </style>
+  /* ── RESPONSIVE ── */
+  @media (max-width: 960px) {
+    .bento { grid-template-columns: 1fr; }
+    .bento-main { grid-row: auto; }
+    .stats-row { grid-template-columns: repeat(2,1fr); }
+    .location-grid { grid-template-columns: 1fr; }
+    .interior-grid { grid-template-columns: 1fr; }
+    .premium-grid { grid-template-columns: 1fr; }
+    .footer-grid { grid-template-columns: 1fr; gap: 40px; }
+  }
+  @media (max-width: 640px) {
+    .nav-pill { padding: 8px 10px; gap: 2px; max-width: calc(100vw - 20px); }
+    .nav-item { padding: 6px 9px; font-size: 11px; }
+    .nav-logo { font-size: 12px; padding: 0 8px 0 2px; }
+    .nav-cta { padding: 7px 12px; font-size: 11px; }
+    section { padding: 60px 5vw; }
+    .hero-content { padding: 0 5vw 60px; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .form-card { padding: 28px 20px; }
+    .scroll-anim-text { flex-direction: column; gap: 16px; align-items: flex-start; bottom: 60px; }
+  }
+  @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+</style>
 </head>
-
 <body>
 
-<!-- ─────────────── NAV ─────────────── -->
-<nav id="main-nav">
-  <div class="nav-inner">
-    <!-- Logo -->
-    <div class="nav-logo" onclick="showPage('home')">
-      <img src="./brand_logo/logo.png/top_logo.png" alt="PENTA I 로고"
-        onerror="this.style.display='none';document.getElementById('logo-txt').style.display='block'">
-      <div class="nav-logo-txt" id="logo-txt" style="display:none;">
-        <div class="en">PENTA I</div>
-        <div class="kr">용인·신갈 펜타원</div>
-      </div>
-    </div>
+<!-- ── 프레임 로딩 오버레이 ── -->
+<div id="frame-loader">
+  <div class="loader-logo">PENTA I</div>
+  <div class="loader-bar-wrap"><div class="loader-bar" id="loader-bar"></div></div>
+  <div class="loader-text" id="loader-text">Loading...</div>
+</div>
 
-    <!-- Desktop menu -->
-    <ul class="nav-menu">
-      <li><button id="nb-business" onclick="showPage('business')">사업안내</button></li>
-      <li><button id="nb-premium"  onclick="showPage('premium')">프리미엄</button></li>
-      <li><button id="nb-units"    onclick="showPage('units')">세대정보</button></li>
-      <li><button id="nb-complex"  onclick="showPage('complex')">단지정보</button></li>
-      <li><button id="nb-board"    onclick="showPage('board')">게시판</button></li>
-    </ul>
-
-    <!-- CTA -->
-    <a href="https://pentaone.imweb.me" target="_blank">
-      <button class="nav-cta">관심고객등록</button>
-    </a>
-
-    <!-- Mobile hamburger -->
-    <button class="nav-ham" id="ham-btn" onclick="toggleMobile()" aria-label="메뉴">
-      <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-        <path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/>
-      </svg>
-    </button>
+<!-- ── GLASS PILL NAV ── -->
+<nav class="nav-pill">
+  <div class="nav-logo">
+    <img src="./brand_logo/logo.png/top_logo.png" alt="PENTA I" onerror="this.style.display='none'">
+    PENTA I
   </div>
+  <button class="nav-item active" onclick="showPage('home')">홈</button>
+  <button class="nav-item" onclick="showPage('info')">사업안내</button>
+  <button class="nav-item" onclick="showPage('premium')">프리미엄</button>
+  <button class="nav-item" onclick="showPage('units')">세대정보</button>
+  <button class="nav-item" onclick="showPage('complex')">단지정보</button>
+  <button class="nav-item" onclick="showPage('board')">게시판</button>
+  <button class="nav-cta" onclick="goConsult()">상담신청</button>
 </nav>
 
-<!-- Mobile menu dropdown -->
-<div class="mobile-menu" id="mobile-menu">
-  <button onclick="showPage('home');toggleMobile()">홈</button>
-  <button onclick="showPage('business');toggleMobile()">사업안내</button>
-  <button onclick="showPage('premium');toggleMobile()">프리미엄</button>
-  <button onclick="showPage('units');toggleMobile()">세대정보</button>
-  <button onclick="showPage('complex');toggleMobile()">단지정보</button>
-  <button onclick="showPage('board');toggleMobile()">게시판</button>
-  <a href="https://pentaone.imweb.me" target="_blank" style="display:block;">
-    <button style="width:100%;background:var(--sage-dark);color:#fff;text-align:left;border-radius:3px;margin-top:4px;padding:14px 8px;font-size:0.92rem;">관심고객 등록 →</button>
-  </a>
+
+<!-- ════════════════════════════════════
+     PAGE: 홈
+════════════════════════════════════ -->
+<div id="page-home" class="page active">
+
+  <!-- ① 히어로: 드론 영상 풀스크린 -->
+  <div class="hero-wrapper">
+    <video id="hero-video" autoplay muted loop playsinline preload="auto">
+      <source src="./아파트_드론_영상_제작_요청.mp4" type="video/mp4">
+    </video>
+    <div class="hero-gradient"></div>
+    <div class="hero-content">
+      <div class="hero-tag">
+        <div class="hero-tag-dot"></div>
+        2026 Grand Open · 용인신갈 랜드마크
+      </div>
+      <h1 class="hero-title">
+        생활은 원스톱<br>
+        전망은 <em>파노라마</em>
+      </h1>
+      <p class="hero-sub">
+        신갈동 58번지 일대 · 지하5층 지상31층 2개동 303세대<br>
+        GTX-A 신설역 3분 · 경부고속도로 직결
+      </p>
+      <div class="hero-btns">
+        <button class="btn-primary" onclick="goConsult()">
+          <div class="btn-icon"><iconify-icon icon="solar:document-add-bold"></iconify-icon></div>
+          무료 상담 신청
+        </button>
+        <button class="btn-secondary" onclick="scrollToScroll()">
+          단지 둘러보기
+          <iconify-icon icon="solar:arrow-down-linear"></iconify-icon>
+        </button>
+      </div>
+    </div>
+    <div class="hero-scroll-hint">
+      <span>Scroll</span>
+      <div class="scroll-line"></div>
+    </div>
+  </div>
+
+  <!-- ② 스크롤 애니메이션: WebP 프레임 시퀀스 -->
+  <div class="scroll-anim-outer" id="scroll-section">
+    <div class="scroll-anim-sticky">
+      <canvas id="scroll-canvas"></canvas>
+      <div class="scroll-overlay-gradient"></div>
+      <div class="scroll-anim-text">
+        <div class="scroll-headline">
+          신갈의 정점<br>
+          <em>31층 스카이 랜드마크</em>
+        </div>
+        <div class="scroll-progress-wrap">
+          <div class="scroll-progress-label">Drone Tour</div>
+          <div class="scroll-progress-bar">
+            <div class="scroll-progress-fill" id="progress-fill"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ③ 핵심 지표 -->
+  <section style="padding-bottom:0;">
+    <div class="stats-row fade-up">
+      <div class="stat-box">
+        <div class="stat-box-num">303</div>
+        <div class="stat-box-label">총 세대수</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-num">31F</div>
+        <div class="stat-box-label">최고 층수</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-num">2동</div>
+        <div class="stat-box-label">총 동수</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-num">GTX</div>
+        <div class="stat-box-label">신설역 직결</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ④ 프리미엄 특화 Bento -->
+  <section>
+    <div class="section-tag">PREMIUM LIFESTYLE</div>
+    <h2 class="section-title">신갈의 정점<br>31층 스카이 랜드마크</h2>
+    <p class="section-sub">교통·자연·커뮤니티·스마트가 하나로. 용인에서 가장 높은 프리미엄 주거 경험.</p>
+
+    <div class="bento fade-up">
+      <div class="bento-card bento-main">
+        <img class="bento-img" src="./images/living_84.webp" alt="펜타원 거실 인테리어" style="height:420px;">
+        <div class="bento-body">
+          <div class="bento-icon-wrap"><iconify-icon icon="solar:home-smile-bold"></iconify-icon></div>
+          <h3 class="bento-title">삶의 가치를 높이는 차별화된 공간 미학</h3>
+          <p class="bento-desc">같은 공간도 디테일에서 가치가 달라집니다. 84m² 프리미엄 설계로 공간의 여백과 품격을 동시에 선사합니다.</p>
+          <span class="bento-badge">84㎡ TYPE</span>
+        </div>
+      </div>
+      <div class="bento-card">
+        <img class="bento-img" src="./images/exterior_close.webp" alt="펜타원 건물 외관" style="height:280px; object-position: top;">
+        <div class="bento-body">
+          <div class="bento-icon-wrap"><iconify-icon icon="solar:buildings-2-bold"></iconify-icon></div>
+          <h3 class="bento-title">랜드마크 타워형 설계</h3>
+          <p class="bento-desc">지상 31층 파노라마 뷰. 신갈저수지와 도심이 한눈에.</p>
+        </div>
+      </div>
+      <div class="bento-card">
+        <div class="bento-body" style="padding-top:32px;">
+          <div class="bento-icon-wrap"><iconify-icon icon="solar:routing-bold"></iconify-icon></div>
+          <h3 class="bento-title">GTX-A 신설역 3분</h3>
+          <p class="bento-desc">강남 20분대. 경부고속도로 신갈IC 직결. 수인분당선 이용 가능한 트리플 교통망.</p>
+          <span class="bento-badge">교통 프리미엄 No.1</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑤ 세대 인테리어 갤러리 -->
+  <section style="background:var(--bg2); border-radius:32px; margin: 0 2vw;">
+    <div class="section-tag">INTERIOR</div>
+    <h2 class="section-title">프리미엄 인테리어</h2>
+    <p class="section-sub">최신 주거트렌드와 과학적 설계의 만남. 같은 공간도 디테일에서 가치가 달라집니다.</p>
+
+    <div class="interior-grid fade-up">
+      <div class="interior-card" style="height:460px;">
+        <img src="./images/living_84.webp" alt="거실" style="height:100%;">
+        <div class="interior-label">LIVING ROOM</div>
+      </div>
+      <div class="interior-sub">
+        <div class="interior-card" style="height:220px;">
+          <img src="./images/kitchen_84.webp" alt="주방" style="height:100%;">
+          <div class="interior-label">KITCHEN</div>
+        </div>
+        <div class="interior-card" style="height:220px;">
+          <img src="./images/bath1_84.webp" alt="욕실" style="height:100%;">
+          <div class="interior-label">BATHROOM</div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <div style="height:80px;"></div>
+
+  <!-- ⑥ 입지 -->
+  <section>
+    <div class="section-tag">LOCATION</div>
+    <h2 class="section-title">어디서든 빠른<br>최적의 입지</h2>
+    <p class="section-sub">경기 용인시 기흥구 신갈동 58번지 일대. 모든 교통망이 집결하는 곳.</p>
+
+    <div class="location-grid fade-up">
+      <div class="location-map">
+        <img src="./images/location_real.webp" alt="펜타원 위치 지도">
+        <div class="location-map-overlay"></div>
+        <div class="location-pin"><iconify-icon icon="solar:map-point-bold"></iconify-icon></div>
+      </div>
+      <div class="transport-list">
+        <div class="transport-item">
+          <div class="transport-icon"><iconify-icon icon="solar:tram-bold"></iconify-icon></div>
+          <div><div class="transport-name">GTX-A 신설역</div><div class="transport-time">도보 3분 · 강남 20분대</div></div>
+        </div>
+        <div class="transport-item">
+          <div class="transport-icon"><iconify-icon icon="solar:highway-bold"></iconify-icon></div>
+          <div><div class="transport-name">신갈IC (경부고속도로)</div><div class="transport-time">차량 2분 · 직접 연결</div></div>
+        </div>
+        <div class="transport-item">
+          <div class="transport-icon"><iconify-icon icon="solar:tram-2-bold"></iconify-icon></div>
+          <div><div class="transport-name">수인분당선 신갈역</div><div class="transport-time">도보 10분</div></div>
+        </div>
+        <div class="transport-item">
+          <div class="transport-icon"><iconify-icon icon="solar:medical-kit-bold"></iconify-icon></div>
+          <div><div class="transport-name">용인세브란스병원</div><div class="transport-time">차량 5분</div></div>
+        </div>
+        <div class="transport-item">
+          <div class="transport-icon"><iconify-icon icon="solar:book-bold"></iconify-icon></div>
+          <div><div class="transport-name">경희대학교 국제캠퍼스</div><div class="transport-time">차량 5분</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ⑦ CTA 배너 -->
+  <section style="padding:0 6vw 100px;">
+    <div class="bento-card fade-up" style="padding:0;overflow:hidden;border-radius:24px;">
+      <img src="./images/exterior_wide.webp" alt="펜타원 전경" style="width:100%;height:320px;object-fit:cover;filter:brightness(0.55);">
+      <div style="padding:48px;margin-top:-80px;position:relative;">
+        <h3 style="font-size:clamp(24px,3vw,38px);font-weight:800;letter-spacing:-0.02em;margin-bottom:12px;">지금 바로 사전 상담 신청하세요</h3>
+        <p style="font-size:15px;color:var(--text-dim);margin-bottom:28px;">선착순 상담 신청 시 우선 분양 안내 및 특별 혜택을 제공해 드립니다.</p>
+        <button class="btn-primary" onclick="goConsult()">
+          <div class="btn-icon"><iconify-icon icon="solar:paper-plane-bold"></iconify-icon></div>
+          무료 상담 신청
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">PENTA I 펜타원</div>
+        <p class="footer-desc">경기 용인시 기흥구 신갈동 58번지 일대<br>지하5층~지상31층 2개동 303세대<br>시행: (주)엠에스티개발 | 시공: 한양 | 신탁: 코리아신탁<br>대출: DS투자증권</p>
+      </div>
+      <div>
+        <div class="footer-h">바로가기</div>
+        <a class="footer-link" onclick="showPage('info')">사업안내</a>
+        <a class="footer-link" onclick="showPage('premium')">프리미엄</a>
+        <a class="footer-link" onclick="showPage('units')">세대정보</a>
+        <a class="footer-link" onclick="showPage('complex')">단지정보</a>
+        <a class="footer-link" onclick="showPage('board')">게시판</a>
+      </div>
+      <div>
+        <div class="footer-h">문의</div>
+        <p class="footer-desc">홍보관 운영 09:00 ~ 18:00<br>(주말·공휴일 포함)<br><br>031-895-6813<br><br>본 홈페이지의 이미지 및 평면은 소비자 이해를 돕기 위한 참고용으로 실제와 다를 수 있습니다.</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 PENTA I 펜타원. All rights reserved.</span>
+      <span>용인신갈 펜타원 분양 홍보관</span>
+    </div>
+  </footer>
 </div>
 
 
-<!-- ═══════════════════════════════════════════
-     HOME PAGE
-═══════════════════════════════════════════ -->
-<div id="page-home" class="page active">
+<!-- ════════════════════════════════════
+     PAGE: 사업안내
+════════════════════════════════════ -->
+<div id="page-info" class="page">
+  <section style="padding-top:140px;">
+    <div class="section-tag">PROJECT OVERVIEW</div>
+    <h2 class="section-title">사업 안내</h2>
+    <p class="section-sub">용인신갈 펜타원의 사업 개요와 주요 현황을 안내드립니다.</p>
 
-  <!-- Hero -->
-  <section class="hero">
-    <img src="https://placehold.co/1920x900/2d3a25/2d3a25?text=" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;">
-    <div class="hero-text">
-      <p class="hero-sub">용인 신갈오거리 31층 하이엔드파인</p>
-      <h1 class="hero-title">생활은 원스톱<br>전망은 파노라마</h1>
-      <div class="hero-brand">
-        <div class="en">PENTA I</div>
-        <div class="kr">용인·신갈 펜타원</div>
-      </div>
-      <p class="hero-notice">아파트분양(예정) 신갈동 58번지 일대 지하5층~지상31층 303세대</p>
-    </div>
-  </section>
-
-  <!-- 4 feature strip -->
-  <div class="feat-strip">
-    <div class="feat-grid">
-      <div class="feat-item">
-        <div class="feat-icon">
-          <svg viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
-        </div>
-        <div class="feat-name">강남 30분대<br>쾌속 교통</div>
-        <div class="feat-val">광역버스 · 기흥역 · GTX-A</div>
-      </div>
-      <div class="feat-item">
-        <div class="feat-icon">
-          <svg viewBox="0 0 24 24"><path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0112 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg>
-        </div>
-        <div class="feat-name">신갈초 도보<br>1분 초품아</div>
-        <div class="feat-val">구갈초 · 신갈고 우수학군</div>
-      </div>
-      <div class="feat-item">
-        <div class="feat-icon">
-          <svg viewBox="0 0 24 24"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-        </div>
-        <div class="feat-name">31층<br>스카이브릿지</div>
-        <div class="feat-val">신갈 최초 하이엔드 설계</div>
-      </div>
-      <div class="feat-item">
-        <div class="feat-icon">
-          <svg viewBox="0 0 24 24"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-        </div>
-        <div class="feat-name">반도체 클러스터<br>투자 호재</div>
-        <div class="feat-val">도시재생 뉴딜 직접 수혜지</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- PERFECT PREMIUM -->
-  <section class="pp-section">
-    <div class="pp-inner">
-      <div class="pp-txt">
-        <p class="pp-label">PERFECT PREMIUM</p>
-        <p class="sec-label" style="margin-bottom:6px;">신갈의 정점이 낳는 자부심</p>
-        <h2 class="pp-title">신갈의 정점!<br>31층 스카이 랜드마크</h2>
-        <a class="pp-more" href="#" onclick="showPage('premium');return false;">
-          자세히 보기
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 5l7 7-7 7"/></svg>
-        </a>
-        <div class="pp-dots">
-          <div class="pp-dot active"></div>
-          <div class="pp-dot"></div>
-          <div class="pp-dot"></div>
-        </div>
-      </div>
-      <div class="pp-images">
-        <div class="pp-img-card">
-          <img src="https://placehold.co/500x440/3a4a30/3a4a30?text=" alt="Premium OS">
-          <div class="pp-img-label">
-            <p class="tag">PREMIUM OS</p>
-            <p class="name">용인 신갈에서 바라본<br>반도의 수혜</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:60px;">
+      <div class="bento-card">
+        <div class="bento-body" style="padding:36px;">
+          <div class="bento-icon-wrap"><iconify-icon icon="solar:buildings-2-bold"></iconify-icon></div>
+          <h3 class="bento-title">사업 개요</h3>
+          <div style="margin-top:20px;display:flex;flex-direction:column;gap:14px;">
+            <div style="display:flex;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);"><span style="font-size:13px;color:var(--text-dim);">사업 명칭</span><span style="font-size:14px;font-weight:600;">용인신갈펜타1</span></div>
+            <div style="display:flex;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);"><span style="font-size:13px;color:var(--text-dim);">위치</span><span style="font-size:14px;font-weight:600;text-align:right;">경기 용인시 기흥구<br>신갈동 58번지 일대</span></div>
+            <div style="display:flex;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);"><span style="font-size:13px;color:var(--text-dim);">규모</span><span style="font-size:14px;font-weight:600;">지하5층 ~ 지상31층</span></div>
+            <div style="display:flex;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);"><span style="font-size:13px;color:var(--text-dim);">세대수</span><span style="font-size:14px;font-weight:600;">2개동 303세대</span></div>
+            <div style="display:flex;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);"><span style="font-size:13px;color:var(--text-dim);">시행</span><span style="font-size:14px;font-weight:600;">(주)엠에스티개발</span></div>
+            <div style="display:flex;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);"><span style="font-size:13px;color:var(--text-dim);">시공</span><span style="font-size:14px;font-weight:600;">한양</span></div>
+            <div style="display:flex;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);"><span style="font-size:13px;color:var(--text-dim);">신탁</span><span style="font-size:14px;font-weight:600;">코리아신탁</span></div>
+            <div style="display:flex;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);"><span style="font-size:13px;color:var(--text-dim);">대출은행</span><span style="font-size:14px;font-weight:600;">DS투자증권</span></div>
           </div>
         </div>
-        <div class="pp-img-card">
-          <img src="https://placehold.co/500x440/2a3a20/2a3a20?text=" alt="Premium 01">
-          <div class="pp-img-label">
-            <p class="tag">PREMIUM 01</p>
-            <p class="name">31층 스카이에서 바라보는<br>도시의 뷰</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="bento-card" style="flex:1;overflow:hidden;padding:0;">
+          <img src="./images/exterior_close.webp" alt="펜타원 조감도" style="width:100%;height:220px;object-fit:cover;object-position:top;">
+          <div class="bento-body"><h3 class="bento-title">조감도</h3><p class="bento-desc">지상 31층 랜드마크 타워형 설계로 용인 스카이라인을 새롭게 정의합니다.</p></div>
+        </div>
+        <div class="bento-card">
+          <div class="bento-body" style="padding:28px;">
+            <div class="bento-icon-wrap"><iconify-icon icon="solar:calendar-bold"></iconify-icon></div>
+            <h3 class="bento-title">분양 일정</h3>
+            <p class="bento-desc">2026년 분양 예정. 사전 상담 신청 시 우선 안내드립니다.</p>
+            <button class="btn-primary" style="margin-top:16px;font-size:14px;padding:12px 20px;" onclick="goConsult()">사전 상담 신청</button>
           </div>
         </div>
       </div>
     </div>
-  </section>
 
-</div><!-- /page-home -->
-
-
-<!-- ═══════════════════════════════════════════
-     사업안내 PAGE
-═══════════════════════════════════════════ -->
-<div id="page-business" class="page">
-  <div class="page-header">
-    <p class="label">OVERVIEW</p>
-    <h1>사업안내</h1>
-    <div class="breadcrumb">
-      <span>HOME</span>
-      <span>›</span>
-      <span>사업안내</span>
-      <span>›</span>
-      <span class="current">사업개요</span>
-    </div>
-  </div>
-
-  <section class="biz-section">
-    <div class="cont">
-      <div class="biz-head">
-        <div class="line-sage" style="margin:0 auto 16px;"></div>
-        <h2 class="big">신갈의 정점에 우뚝선<br>31층 스카이 랜드마크</h2>
-        <p class="brand-name">용인·신갈 펜타원 PENTA I</p>
+    <div class="location-grid fade-up">
+      <div>
+        <div class="section-tag">LOCATION</div>
+        <h3 class="section-title" style="font-size:clamp(22px,2.5vw,34px);">탁월한 입지</h3>
+        <p style="font-size:15px;color:var(--text-dim);line-height:1.8;margin-bottom:28px;">신갈동은 경부고속도로 신갈IC와 직접 연결되는 교통의 요지입니다. GTX-A 신설역이 예정되어 강남까지 20분대 출퇴근이 가능해집니다.</p>
+        <div class="transport-list">
+          <div class="transport-item"><div class="transport-icon"><iconify-icon icon="solar:tram-bold"></iconify-icon></div><div><div class="transport-name">GTX-A 신설역</div><div class="transport-time">도보 3분 · 강남 20분대</div></div></div>
+          <div class="transport-item"><div class="transport-icon"><iconify-icon icon="solar:highway-bold"></iconify-icon></div><div><div class="transport-name">신갈IC (경부고속도로)</div><div class="transport-time">차량 2분</div></div></div>
+          <div class="transport-item"><div class="transport-icon"><iconify-icon icon="solar:hospital-bold"></iconify-icon></div><div><div class="transport-name">용인세브란스병원</div><div class="transport-time">차량 5분</div></div></div>
+        </div>
       </div>
-
-      <div class="biz-img-wrap">
-        <img src="https://placehold.co/1100x400/3a4a30/3a4a30?text=" alt="펜타원 외관" style="border:1px solid var(--border);">
+      <div class="location-map">
+        <img src="./images/location_real.webp" alt="입지 지도">
+        <div class="location-map-overlay"></div>
+        <div class="location-pin"><iconify-icon icon="solar:home-bold"></iconify-icon></div>
       </div>
-
-      <table class="spec-table">
-        <tr>
-          <th>대지위치</th>
-          <td>경기도 용인시 기흥구 신갈동 58번지 일대</td>
-        </tr>
-        <tr>
-          <th>지역지구</th>
-          <td>일반주거지역</td>
-        </tr>
-        <tr>
-          <th>규모</th>
-          <td>지하 5층 ~ 지상 31층 / 2개동</td>
-        </tr>
-        <tr>
-          <th>총세대수</th>
-          <td>303세대 (59㎡형 102세대, 84㎡형 201세대)</td>
-        </tr>
-        <tr>
-          <th>주차대수</th>
-          <td>480대 (세대당 1.56대)</td>
-        </tr>
-        <tr>
-          <th>아파트 층</th>
-          <td>7층 이상 (저층부 근린생활시설)</td>
-        </tr>
-        <tr>
-          <th>분양가</th>
-          <td>59㎡형 5억600만 ~ 6억200만원 / 84㎡형 6억9천 ~ 8억2천만원</td>
-        </tr>
-        <tr>
-          <th>시행</th>
-          <td>신오지역주택조합추진위원회 (고유번호: 131-80-28546)</td>
-        </tr>
-        <tr>
-          <th>자금관리</th>
-          <td>(주)무궁화신탁</td>
-        </tr>
-        <tr>
-          <th>분양대행</th>
-          <td>앰키앤씨</td>
-        </tr>
-        <tr>
-          <th>문의</th>
-          <td>1555-1087</td>
-        </tr>
-      </table>
     </div>
   </section>
-</div><!-- /page-business -->
+  <footer><div class="footer-bottom" style="border:none;padding:40px 0 0;"><span>© 2026 PENTA I 펜타원. All rights reserved.</span></div></footer>
+</div>
 
 
-<!-- ═══════════════════════════════════════════
-     프리미엄 PAGE
-═══════════════════════════════════════════ -->
+<!-- ════════════════════════════════════
+     PAGE: 프리미엄
+════════════════════════════════════ -->
 <div id="page-premium" class="page">
-  <div class="page-header">
-    <p class="label">PREMIUM</p>
-    <h1>프리미엄</h1>
-    <div class="breadcrumb">
-      <span>HOME</span>
-      <span>›</span>
-      <span>프리미엄</span>
-      <span>›</span>
-      <span class="current">입지환경</span>
+  <section style="padding-top:140px;">
+    <div class="section-tag">PREMIUM AMENITY</div>
+    <h2 class="section-title">5가지<br>프리미엄 특화</h2>
+    <p class="section-sub">삶의 높이가 자부심이 되는 곳. 신갈에 없던 프리미엄 라이프를 설계합니다.</p>
+
+    <div class="premium-grid fade-up">
+      <div class="premium-card">
+        <div class="premium-num">01</div>
+        <div class="premium-icon"><iconify-icon icon="solar:routing-bold"></iconify-icon></div>
+        <h3 class="premium-title">교통 프리미엄</h3>
+        <p class="premium-desc">GTX-A 신설역 도보 3분, 경부고속도로 신갈IC 직결, 수인분당선 신갈역 이용 가능한 트리플 교통망.</p>
+        <div class="premium-list-items">
+          <div class="premium-li">GTX-A 신설역 도보 3분</div>
+          <div class="premium-li">신갈IC 차량 2분</div>
+          <div class="premium-li">강남 20분대 출퇴근</div>
+        </div>
+      </div>
+      <div class="premium-card">
+        <div class="premium-num">02</div>
+        <div class="premium-icon"><iconify-icon icon="solar:buildings-bold"></iconify-icon></div>
+        <h3 class="premium-title">커뮤니티 프리미엄</h3>
+        <p class="premium-desc">스카이브릿지에서 시작되는 품격 높은 커뮤니티. 피트니스, 스카이라운지, 게스트하우스까지.</p>
+        <div class="premium-list-items">
+          <div class="premium-li">스카이라운지 (최상층)</div>
+          <div class="premium-li">피트니스센터 + 사우나</div>
+          <div class="premium-li">키즈카페 + 독서실</div>
+          <div class="premium-li">게스트하우스</div>
+        </div>
+      </div>
+      <div class="premium-card">
+        <div class="premium-num">03</div>
+        <div class="premium-icon"><iconify-icon icon="solar:tree-bold"></iconify-icon></div>
+        <h3 class="premium-title">자연 프리미엄</h3>
+        <p class="premium-desc">신갈저수지 조망권, 단지 내 숲길 산책로, 옥상 정원 등 도심 속 힐링 공간.</p>
+        <div class="premium-list-items">
+          <div class="premium-li">신갈저수지 조망 가구</div>
+          <div class="premium-li">단지 내 조경 산책로</div>
+          <div class="premium-li">옥상 루프탑 정원</div>
+        </div>
+      </div>
+      <div class="premium-card">
+        <div class="premium-num">04</div>
+        <div class="premium-icon"><iconify-icon icon="solar:smart-home-bold"></iconify-icon></div>
+        <h3 class="premium-title">스마트 프리미엄</h3>
+        <p class="premium-desc">AI 홈 시스템, 스마트 주차 관리, 무인 택배함, 에너지 절감 시스템 적용.</p>
+        <div class="premium-list-items">
+          <div class="premium-li">AI 스마트홈 시스템</div>
+          <div class="premium-li">스마트 자동 주차</div>
+          <div class="premium-li">에너지 절감 시스템</div>
+        </div>
+      </div>
+      <div class="premium-card">
+        <div class="premium-num">05</div>
+        <div class="premium-icon"><iconify-icon icon="solar:shield-check-bold"></iconify-icon></div>
+        <h3 class="premium-title">안전 프리미엄</h3>
+        <p class="premium-desc">24시간 유인 경비 시스템, AI CCTV, 세대별 방범 센서로 완벽한 보안 환경 구축.</p>
+        <div class="premium-list-items">
+          <div class="premium-li">24시간 유인 경비</div>
+          <div class="premium-li">AI 스마트 CCTV</div>
+          <div class="premium-li">세대별 방범 센서</div>
+        </div>
+      </div>
+      <div class="premium-card" style="background:var(--gold-dim);border-color:var(--border-gold);">
+        <div class="premium-num" style="color:rgba(201,165,90,0.3);">+</div>
+        <div class="premium-icon" style="background:rgba(201,165,90,0.2);"><iconify-icon icon="solar:star-bold"></iconify-icon></div>
+        <h3 class="premium-title" style="color:var(--gold);">지금 상담하세요</h3>
+        <p class="premium-desc">5가지 프리미엄이 한곳에 모인 펜타원. 선착순 사전 상담 신청 시 우선 분양 안내를 받으실 수 있습니다.</p>
+        <button class="btn-primary" style="margin-top:20px;font-size:14px;padding:12px 20px;" onclick="goConsult()">상담 신청하기</button>
+      </div>
     </div>
-  </div>
 
-  <section class="prem-section">
-    <div class="cont">
-      <div class="prem-head">
-        <div class="line-sage" style="margin:0 auto 16px;"></div>
-        <h2 class="big">삶의 높이가 자부심이 되는 곳<br>신갈에 없던 프리미엄 라이프를 설계해라.</h2>
-        <p class="prem-sub">
-          비교할 것이 없는 자연환경과 도시설계 100% 확보된 안전한신탁<br>
-          자랑할 수 있을 정보가 넘치는 지역개발 특화된 최적의 입지환경.
-        </p>
-      </div>
-
-      <!-- Map -->
-      <div class="prem-map">
-        <img src="https://placehold.co/1100x380/e8ede3/7a8d69?text=용인+신갈오거리+입지+지도" alt="위치 지도">
-      </div>
-
-      <!-- Feature 1: 교통 -->
-      <div class="prem-feature">
-        <div class="ph">
-          <img src="https://placehold.co/200x140/c8d4c0/4e6037?text=교통" alt="교통">
-        </div>
-        <div>
-          <p class="txt-tag">TRANSPORTATION · 교통</p>
-          <h3>서울과 인근을 잇는 쾌속 교통의 거점</h3>
-          <p>단지 바로 앞 광역버스로 강남 출퇴근 30분대! 신갈IC, 분당선 기흥역, GTX-A 구성역(예정) 등 수도권을 연결하는 쾌속망을 갖추고 있어 어디든 빠르고 편리하게 이동할 수 있습니다.</p>
+    <!-- 입지 상세 -->
+    <div style="margin-top:80px;">
+      <div class="section-tag">PREMIUM LOCATION</div>
+      <h3 class="section-title" style="font-size:clamp(22px,2.8vw,38px);margin-bottom:16px;">삶의 높이가 자부심이 있는 곳</h3>
+      <p style="font-size:15px;color:var(--text-dim);line-height:1.8;margin-bottom:40px;">비교우위의 교통망과 도시시설 100% 속에 자연까지 — 지켜온 토지에서 지역명 최고의 프리미엄 라이프를 설계합니다.</p>
+      <div class="bento-card fade-up" style="overflow:hidden;padding:0;">
+        <img src="./images/location_real.webp" alt="주변 인프라" style="width:100%;max-height:400px;object-fit:cover;object-position:top;">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--border);">
+          <div style="padding:24px;border-right:1px solid var(--border);">
+            <div class="transport-icon" style="margin-bottom:12px;"><iconify-icon icon="solar:tram-bold"></iconify-icon></div>
+            <div style="font-size:15px;font-weight:700;margin-bottom:4px;">서울과 연결되는 빠른 교통의 여파</div>
+            <div style="font-size:13px;color:var(--text-dim);line-height:1.7;">GTX-A 신설역 3분. 경부고속도로 직결. 분당, 수원, 강남 모두 가깝습니다.</div>
+          </div>
+          <div style="padding:24px;border-right:1px solid var(--border);">
+            <div class="transport-icon" style="margin-bottom:12px;"><iconify-icon icon="solar:book-bold"></iconify-icon></div>
+            <div style="font-size:15px;font-weight:700;margin-bottom:4px;">어린이도 자라는 교육 환경</div>
+            <div style="font-size:13px;color:var(--text-dim);line-height:1.7;">경희대 국제캠퍼스 5분. 신갈초·중학교 인접. 학원가 밀집 지역.</div>
+          </div>
+          <div style="padding:24px;">
+            <div class="transport-icon" style="margin-bottom:12px;"><iconify-icon icon="solar:medical-kit-bold"></iconify-icon></div>
+            <div style="font-size:15px;font-weight:700;margin-bottom:4px;">주변 생활이 갖춰진 안심 수준</div>
+            <div style="font-size:13px;color:var(--text-dim);line-height:1.7;">용인세브란스병원 5분. 이마트·홈플러스 인근. 생활 인프라 완비.</div>
+          </div>
         </div>
       </div>
-
-      <!-- Feature 2: 학군 -->
-      <div class="prem-feature">
-        <div class="ph">
-          <img src="https://placehold.co/200x140/c8d4c0/4e6037?text=학군" alt="학군">
-        </div>
-        <div>
-          <p class="txt-tag">EDUCATION · 교육</p>
-          <h3>아이의 미래가 자라는 신갈 교육 환경</h3>
-          <p>신갈초등학교 도보 1분! 우리 아이의 안전한 등하굣길을 보장합니다. 구갈초, 신갈고 등 우수한 교육 환경과 학원가가 인접하여 완성된 교육 인프라를 누릴 수 있습니다.</p>
-        </div>
-      </div>
-
-      <!-- Feature 3: 설계 -->
-      <div class="prem-feature">
-        <div class="ph">
-          <img src="https://placehold.co/200x140/c8d4c0/4e6037?text=설계" alt="설계">
-        </div>
-        <div>
-          <p class="txt-tag">ARCHITECTURE · 설계</p>
-          <h3>주변을 압도하는 완벽한 스카이라인</h3>
-          <p>막힘없는 파노라마 뷰를 선사하는 31층 초고층 랜드마크. 용인 신갈의 자부심이 될 '스카이브릿지' 특화 설계와 선호도 높은 59㎡·84㎡ 중소형 평형으로 구성되었습니다.</p>
-        </div>
-      </div>
-
-      <!-- Feature 4: 투자 -->
-      <div class="prem-feature">
-        <div class="ph">
-          <img src="https://placehold.co/200x140/c8d4c0/4e6037?text=투자" alt="투자">
-        </div>
-        <div>
-          <p class="txt-tag">INVESTMENT · 투자</p>
-          <h3>도시재생과 대규모 개발의 개발의 수혜</h3>
-          <p>신갈오거리 도시재생 뉴딜사업의 직접 수혜지로, 용인플랫폼시티와 반도체 클러스터 조성 등 대규모 개발 호재의 중심에 위치합니다. 합리적인 분양가로 확실한 투자가치를 실현하십시오.</p>
-        </div>
-      </div>
-
     </div>
   </section>
-</div><!-- /page-premium -->
+  <footer><div class="footer-bottom" style="border:none;padding:40px 0 0;"><span>© 2026 PENTA I 펜타원. All rights reserved.</span></div></footer>
+</div>
 
 
-<!-- ═══════════════════════════════════════════
-     세대정보 PAGE
-═══════════════════════════════════════════ -->
+<!-- ════════════════════════════════════
+     PAGE: 세대정보
+════════════════════════════════════ -->
 <div id="page-units" class="page">
-  <div class="page-header">
-    <p class="label">UNIT INFORMATION</p>
-    <h1>세대정보</h1>
-    <div class="breadcrumb">
-      <span>HOME</span>
-      <span>›</span>
-      <span>세대정보</span>
-      <span>›</span>
-      <span class="current">호면설계</span>
+  <section style="padding-top:140px;">
+    <div class="section-tag">UNIT INFORMATION</div>
+    <h2 class="section-title">세대 정보</h2>
+    <p class="section-sub">최신 주거트렌드와 과학적 설계의 만남. 같은 공간도 디테일에서 가치가 달라집니다.</p>
+
+    <!-- 타입 카드 -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:60px;" class="fade-up">
+      <div class="bento-card" style="padding:0;overflow:hidden;">
+        <div style="background:linear-gradient(135deg,rgba(201,165,90,0.15) 0%,transparent 100%);padding:28px 28px 0;">
+          <span class="bento-badge">84A타입</span>
+          <h3 style="font-size:34px;font-weight:900;color:var(--gold);letter-spacing:-0.03em;margin:12px 0 4px;">84㎡</h3>
+          <p style="font-size:13px;color:var(--text-dim);">3Bay 판상형 · 4룸</p>
+        </div>
+        <div style="padding:20px 28px 28px;font-size:14px;color:var(--text-dim);line-height:1.9;">
+          <p>· 전용 84.94㎡ / 공급 112.05㎡</p><p>· 거실+주방+방3+욕실2</p><p>· 남향 위주 배치</p><p>· 드레스룸 + 팬트리 기본</p>
+        </div>
+      </div>
+      <div class="bento-card" style="padding:0;overflow:hidden;">
+        <div style="background:linear-gradient(135deg,rgba(96,165,250,0.1) 0%,transparent 100%);padding:28px 28px 0;">
+          <span class="unit-badge badge-blue">84B타입</span>
+          <h3 style="font-size:34px;font-weight:900;color:#93c5fd;letter-spacing:-0.03em;margin:12px 0 4px;">84㎡</h3>
+          <p style="font-size:13px;color:var(--text-dim);">4Bay 판상형 · 4룸</p>
+        </div>
+        <div style="padding:20px 28px 28px;font-size:14px;color:var(--text-dim);line-height:1.9;">
+          <p>· 전용 84.99㎡ / 공급 113.20㎡</p><p>· 거실+주방+방3+욕실2</p><p>· 4Bay 개방감 극대화</p><p>· 코너형 테라스</p>
+        </div>
+      </div>
+      <div class="bento-card" style="padding:0;overflow:hidden;">
+        <div style="background:linear-gradient(135deg,rgba(74,222,128,0.08) 0%,transparent 100%);padding:28px 28px 0;">
+          <span class="unit-badge badge-green">101타입</span>
+          <h3 style="font-size:34px;font-weight:900;color:#86efac;letter-spacing:-0.03em;margin:12px 0 4px;">101㎡</h3>
+          <p style="font-size:13px;color:var(--text-dim);">4Bay 판상형 · 4룸+알파</p>
+        </div>
+        <div style="padding:20px 28px 28px;font-size:14px;color:var(--text-dim);line-height:1.9;">
+          <p>· 전용 101.24㎡ / 공급 134.15㎡</p><p>· 거실+주방+방3+서재+욕실2</p><p>· 알파룸 + 드레스룸</p><p>· 실용적인 공간 배치</p>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <section class="units-section">
-    <div class="cont">
-      <div class="units-head">
-        <div class="line-sage" style="margin:0 auto 16px;"></div>
-        <h2 class="big">최신 주거트렌드와 과학적 설계의 만남</h2>
-        <p class="sub">넓은 공간으로 더 넓게 사는 공간 구성과 혁신 설계로 삶의 가치를 완성합니다.</p>
+    <!-- 세대 구성표 -->
+    <div class="bento-card fade-up" style="overflow:hidden;padding:0;margin-bottom:60px;">
+      <div style="padding:24px 28px 0;"><div class="section-tag">세대 구성표</div></div>
+      <div style="overflow-x:auto;">
+        <table class="unit-table">
+          <thead><tr><th>타입</th><th>전용면적</th><th>공급면적</th><th>방/화장실</th><th>세대수</th><th>특징</th></tr></thead>
+          <tbody>
+            <tr><td><span class="unit-badge badge-gold">84A</span></td><td>84.94㎡</td><td>112.05㎡</td><td>3/2</td><td>102세대</td><td>3Bay · 남향</td></tr>
+            <tr><td><span class="unit-badge badge-blue">84B</span></td><td>84.99㎡</td><td>113.20㎡</td><td>3/2</td><td>102세대</td><td>4Bay · 코너</td></tr>
+            <tr><td><span class="unit-badge badge-green">101</span></td><td>101.24㎡</td><td>134.15㎡</td><td>3+서재/2</td><td>99세대</td><td>알파룸 · 드레스룸</td></tr>
+            <tr style="font-weight:700;background:var(--glass);"><td colspan="4" style="color:var(--gold);">합계</td><td style="color:var(--gold);">303세대</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 평면도 -->
+    <div class="section-tag">FLOOR PLAN</div>
+    <h3 class="section-title" style="font-size:clamp(22px,2.5vw,36px);margin-bottom:32px;">평면도</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;" class="fade-up">
+      <div class="bento-card" style="overflow:hidden;padding:0;">
+        <div style="background:var(--bg3);padding:32px;display:flex;align-items:center;justify-content:center;">
+          <img src="./images/floorplan_84new.webp" alt="84m² 평면도" style="max-width:100%;max-height:300px;object-fit:contain;filter:brightness(0.9);">
+        </div>
+        <div style="padding:24px;">
+          <span class="unit-badge badge-gold" style="margin-bottom:10px;display:inline-block;">84타입</span>
+          <p style="font-size:14px;color:var(--text-dim);">3Bay/4Bay 판상형 · 최신 주거트렌드 반영</p>
+        </div>
+      </div>
+      <div class="bento-card" style="overflow:hidden;padding:0;">
+        <div style="background:var(--bg3);padding:32px;display:flex;align-items:center;justify-content:center;">
+          <img src="./images/floorplan_59new.webp" alt="64m² 평면도" style="max-width:100%;max-height:300px;object-fit:contain;filter:brightness(0.9);">
+        </div>
+        <div style="padding:24px;">
+          <span class="unit-badge badge-blue" style="margin-bottom:10px;display:inline-block;">64타입</span>
+          <p style="font-size:14px;color:var(--text-dim);">공간감 최대화 · 실용적인 동선 설계</p>
+        </div>
+      </div>
+    </div>
+    <p style="margin-top:16px;font-size:12px;color:var(--text-dim);text-align:center;">* 평면도는 소비자 이해를 돕기 위한 참고용으로, 실제 시공 시 변경될 수 있습니다.</p>
+
+    <!-- 인테리어 갤러리 -->
+    <div style="margin-top:80px;">
+      <div class="section-tag">INTERIOR GALLERY</div>
+      <h3 class="section-title" style="font-size:clamp(22px,2.5vw,36px);margin-bottom:12px;">실내 인테리어</h3>
+      <p style="font-size:14px;color:var(--text-dim);margin-bottom:36px;">실제 시공 예정 인테리어 CG. 마감재·설비 등은 변경될 수 있습니다.</p>
+
+      <!-- 타입 탭 -->
+      <div style="display:flex;gap:8px;margin-bottom:28px;">
+        <button id="tab-84" onclick="switchType('84')" style="padding:10px 24px;border-radius:100px;background:var(--gold);color:#0c0c0e;font-size:14px;font-weight:700;border:none;cursor:pointer;font-family:inherit;transition:all 0.2s;">84㎡ TYPE</button>
+        <button id="tab-59" onclick="switchType('59')" style="padding:10px 24px;border-radius:100px;background:var(--glass2);color:var(--text-dim);font-size:14px;font-weight:600;border:1px solid var(--border);cursor:pointer;font-family:inherit;transition:all 0.2s;">59㎡ TYPE</button>
       </div>
 
-      <!-- Tabs -->
-      <div class="unit-tabs">
-        <button class="unit-tab active" id="tab59" onclick="switchUnit('59')">59㎡ TYPE</button>
-        <button class="unit-tab" id="tab84" onclick="switchUnit('84')">84㎡ TYPE</button>
-      </div>
-
-      <!-- 59㎡ panel -->
-      <div class="unit-panel active" id="panel59">
-        <div class="unit-layout">
-          <div class="unit-plan">
-            <img src="https://placehold.co/520x480/f0f0eb/7a8d69?text=59㎡+평면도" alt="59㎡ 평면도">
+      <!-- 84타입 갤러리 -->
+      <div id="gallery-84" class="fade-up">
+        <div class="interior-grid" style="margin-bottom:16px;">
+          <div class="interior-card" style="height:420px;">
+            <img src="./images/living_84.webp" alt="84타입 거실" style="height:100%;width:100%;">
+            <div class="interior-label">84㎡ LIVING ROOM</div>
           </div>
-          <div>
-            <p class="unit-info-label">TYPE A</p>
-            <h3 class="unit-type-name">59㎡</h3>
-            <table class="unit-spec-table">
-              <tr>
-                <th>세대수</th>
-                <td>102세대</td>
-              </tr>
-              <tr>
-                <th>전용면적</th>
-                <td>59.36㎡</td>
-              </tr>
-              <tr>
-                <th>공급면적</th>
-                <td>88.32㎡</td>
-              </tr>
-              <tr>
-                <th>기타공용</th>
-                <td>63.71㎡</td>
-              </tr>
-              <tr>
-                <th>계약면적</th>
-                <td>152.03㎡</td>
-              </tr>
-              <tr>
-                <th>입주층</th>
-                <td>7층 이상</td>
-              </tr>
-            </table>
-            <div class="unit-price-box">
-              <p class="price-label">분양가</p>
-              <p class="price">5억 600만 ~ 6억 200만원 <span style="font-size:0.78rem;font-weight:400;color:var(--mid);">(층에 따라 상이)</span></p>
+          <div class="interior-sub">
+            <div class="interior-card" style="height:200px;">
+              <img src="./images/kitchen_84.webp" alt="84타입 주방" style="height:100%;width:100%;">
+              <div class="interior-label">KITCHEN</div>
             </div>
-            <div style="margin-top:20px;">
-              <a href="https://pentaone.imweb.me" target="_blank">
-                <button class="btn-submit" style="padding:12px 32px;">59㎡ 관심 등록</button>
-              </a>
+            <div class="interior-card" style="height:200px;">
+              <img src="./images/bath1_84.webp" alt="84타입 욕실1" style="height:100%;width:100%;">
+              <div class="interior-label">BATH ROOM 1</div>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div class="interior-card" style="height:240px;">
+            <img src="./images/bath2_84.webp" alt="84타입 욕실2" style="height:100%;width:100%;">
+            <div class="interior-label">BATH ROOM 2</div>
+          </div>
+          <div class="bento-card" style="display:flex;align-items:center;justify-content:center;background:var(--gold-dim);border-color:var(--border-gold);cursor:pointer;" onclick="goConsult()">
+            <div style="text-align:center;padding:28px;">
+              <div style="font-size:32px;margin-bottom:12px;">✨</div>
+              <div style="font-size:17px;font-weight:700;color:var(--gold);margin-bottom:8px;">84㎡ 상담 신청</div>
+              <div style="font-size:13px;color:var(--text-dim);">전용 84㎡ · 201세대<br>선착순 우선 안내</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 84㎡ panel -->
-      <div class="unit-panel" id="panel84">
-        <div class="unit-layout">
-          <div class="unit-plan">
-            <img src="https://placehold.co/520x480/f0f0eb/7a8d69?text=84㎡+평면도" alt="84㎡ 평면도">
+      <!-- 59타입 갤러리 -->
+      <div id="gallery-59" class="fade-up" style="display:none;">
+        <div class="interior-grid" style="margin-bottom:16px;">
+          <div class="interior-card" style="height:420px;">
+            <img src="./images/living_59.webp" alt="59타입 거실" style="height:100%;width:100%;">
+            <div class="interior-label">59㎡ LIVING ROOM</div>
           </div>
-          <div>
-            <p class="unit-info-label">TYPE B</p>
-            <h3 class="unit-type-name">84㎡</h3>
-            <table class="unit-spec-table">
-              <tr>
-                <th>세대수</th>
-                <td>201세대</td>
-              </tr>
-              <tr>
-                <th>전용면적</th>
-                <td>84.93㎡</td>
-              </tr>
-              <tr>
-                <th>공급면적</th>
-                <td>122.34㎡</td>
-              </tr>
-              <tr>
-                <th>기타공용</th>
-                <td>90.91㎡</td>
-              </tr>
-              <tr>
-                <th>계약면적</th>
-                <td>213.24㎡</td>
-              </tr>
-              <tr>
-                <th>입주층</th>
-                <td>7층 이상</td>
-              </tr>
-            </table>
-            <div class="unit-price-box">
-              <p class="price-label">분양가</p>
-              <p class="price">6억 9천만 ~ 8억 2천만원 <span style="font-size:0.78rem;font-weight:400;color:var(--mid);">(층에 따라 상이)</span></p>
+          <div class="interior-sub">
+            <div class="interior-card" style="height:200px;">
+              <img src="./images/kitchen_59.webp" alt="59타입 주방" style="height:100%;width:100%;">
+              <div class="interior-label">KITCHEN</div>
             </div>
-            <div style="margin-top:20px;">
-              <a href="https://pentaone.imweb.me" target="_blank">
-                <button class="btn-submit" style="padding:12px 32px;">84㎡ 관심 등록</button>
-              </a>
+            <div class="interior-card" style="height:200px;">
+              <img src="./images/dressroom_59.webp" alt="59타입 드레스룸" style="height:100%;width:100%;">
+              <div class="interior-label">DRESS ROOM</div>
             </div>
           </div>
         </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div class="interior-card" style="height:240px;">
+            <img src="./images/bath1_59.webp" alt="59타입 욕실1" style="height:100%;width:100%;">
+            <div class="interior-label">BATH ROOM 1</div>
+          </div>
+          <div class="interior-card" style="height:240px;">
+            <img src="./images/bath2_59.webp" alt="59타입 욕실2" style="height:100%;width:100%;">
+            <div class="interior-label">BATH ROOM 2</div>
+          </div>
+        </div>
       </div>
-
     </div>
   </section>
-</div><!-- /page-units -->
+  <footer><div class="footer-bottom" style="border:none;padding:40px 0 0;"><span>© 2026 PENTA I 펜타원. All rights reserved.</span></div></footer>
+</div>
 
 
-<!-- ═══════════════════════════════════════════
-     단지정보 PAGE
-═══════════════════════════════════════════ -->
+<!-- ════════════════════════════════════
+     PAGE: 단지정보
+════════════════════════════════════ -->
 <div id="page-complex" class="page">
-  <div class="page-header">
-    <p class="label">COMPLEX INFORMATION</p>
-    <h1>단지정보</h1>
-    <div class="breadcrumb">
-      <span>HOME</span>
-      <span>›</span>
-      <span>단지정보</span>
-      <span>›</span>
-      <span class="current">커뮤니티</span>
+  <section style="padding-top:140px;">
+    <div class="section-tag">COMPLEX INFO</div>
+    <h2 class="section-title">단지 정보</h2>
+    <p class="section-sub">스카이브릿지에서 시작되는 품격 높은 커뮤니티 문화.</p>
+
+    <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:24px;margin-bottom:60px;" class="fade-up">
+      <div class="bento-card" style="overflow:hidden;padding:0;">
+        <img src="./images/exterior_wide.webp" alt="단지 전경" style="width:100%;height:320px;object-fit:cover;object-position:top;">
+        <div style="padding:24px;"><h3 class="bento-title">단지 전경</h3><p class="bento-desc">2개동이 최적의 일조권과 조망권을 확보하도록 배치되었습니다.</p></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="bento-card" style="flex:1;">
+          <div class="bento-body" style="padding:28px;">
+            <div class="bento-icon-wrap"><iconify-icon icon="solar:home-2-bold"></iconify-icon></div>
+            <h3 class="bento-title">단지 규모</h3>
+            <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;justify-content:space-between;font-size:14px;"><span style="color:var(--text-dim);">대지면적</span><span style="font-weight:600;">약 6,200㎡</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:14px;"><span style="color:var(--text-dim);">건폐율</span><span style="font-weight:600;">29%</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:14px;"><span style="color:var(--text-dim);">용적률</span><span style="font-weight:600;">298%</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:14px;"><span style="color:var(--text-dim);">주차대수</span><span style="font-weight:600;">총 454대</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="bento-card">
+          <div class="bento-body" style="padding:28px;">
+            <div class="bento-icon-wrap"><iconify-icon icon="solar:parking-circle-bold"></iconify-icon></div>
+            <h3 class="bento-title">주차 정보</h3>
+            <p class="bento-desc">세대당 1.5대 이상 주차 가능. 전기차 충전소 완비.</p>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <section class="complex-section">
-    <div class="cont">
-      <div class="complex-head">
-        <div class="line-sage" style="margin:0 auto 16px;"></div>
-        <h2 class="big">스카이브릿지에서 시작되는<br>품격 높은 커뮤니티 문화</h2>
-        <p class="sub">스카이브릿지가 작 된 조화로운 품격<br>자부심을 높이는 프리미엄 커뮤니티 시설</p>
+    <div class="section-tag">NEARBY</div>
+    <h3 class="section-title" style="font-size:clamp(22px,2.5vw,36px);margin-bottom:32px;">주변 생활 인프라</h3>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:60px;" class="fade-up">
+      <div class="stat-box"><div class="stat-box-num" style="font-size:28px;">🏥</div><div style="font-size:15px;font-weight:700;margin:8px 0 4px;">의료</div><div class="stat-box-label">용인세브란스 5분<br>응급의료 인근</div></div>
+      <div class="stat-box"><div class="stat-box-num" style="font-size:28px;">📚</div><div style="font-size:15px;font-weight:700;margin:8px 0 4px;">교육</div><div class="stat-box-label">경희대 5분<br>신갈초·중학교 인접</div></div>
+      <div class="stat-box"><div class="stat-box-num" style="font-size:28px;">🛒</div><div style="font-size:15px;font-weight:700;margin:8px 0 4px;">쇼핑</div><div class="stat-box-label">이마트·홈플러스<br>롯데백화점 인근</div></div>
+      <div class="stat-box"><div class="stat-box-num" style="font-size:28px;">🌳</div><div style="font-size:15px;font-weight:700;margin:8px 0 4px;">자연</div><div class="stat-box-label">신갈저수지 조망<br>경안천 산책로</div></div>
+    </div>
+
+    <div class="bento-card fade-up" style="overflow:hidden;padding:0;">
+      <img src="./images/exterior_wide.webp" alt="단지 전경" style="width:100%;max-height:300px;object-fit:cover;filter:brightness(0.75);">
+      <div style="padding:36px;">
+        <h3 style="font-size:26px;font-weight:800;margin-bottom:12px;">신갈의 자연과 도시가 만나는 곳</h3>
+        <p style="font-size:15px;color:var(--text-dim);max-width:600px;line-height:1.8;">신갈저수지의 수려한 자연 조망과 경부고속도로 직결 편의성을 동시에 누릴 수 있는 최적의 주거 환경입니다.</p>
       </div>
-
-      <div class="complex-img">
-        <img src="https://placehold.co/1100x360/3a4a30/3a4a30?text=" alt="단지 조감도" style="border:1px solid var(--border);">
-      </div>
-
-      <div class="complex-grid">
-        <div class="complex-card">
-          <div class="icon">
-            <svg viewBox="0 0 24 24"><path stroke-linecap="round" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path stroke-linecap="round" d="M9 22V12h6v10"/></svg>
-          </div>
-          <h3>스카이브릿지</h3>
-          <p>두 개 동을 연결하는 하이엔드 스카이브릿지. 신갈에 없던 최초의 특화 설계로 랜드마크적 가치를 실현합니다.</p>
-        </div>
-        <div class="complex-card">
-          <div class="icon">
-            <svg viewBox="0 0 24 24"><path stroke-linecap="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-          </div>
-          <h3>피트니스 센터</h3>
-          <p>최고급 장비를 갖춘 피트니스 센터. 바쁜 일상 속에서도 건강을 유지할 수 있는 프라이빗 공간을 제공합니다.</p>
-        </div>
-        <div class="complex-card">
-          <div class="icon">
-            <svg viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 3v1m0 16v1M3 12h1m16 0h1M5.636 5.636l.707.707M17.657 17.657l.707.707M5.636 18.364l.707-.707M17.657 6.343l.707-.707"/><circle cx="12" cy="12" r="3"/></svg>
-          </div>
-          <h3>루프탑 가든</h3>
-          <p>31층 초고층에서 즐기는 파노라마 루프탑 가든. 신갈 전경을 한눈에 담을 수 있는 특별한 공간입니다.</p>
-        </div>
-        <div class="complex-card">
-          <div class="icon">
-            <svg viewBox="0 0 24 24"><path stroke-linecap="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-          </div>
-          <h3>입주민 라운지</h3>
-          <p>고급스러운 인테리어로 꾸며진 입주민 전용 라운지. 비즈니스 미팅부터 소셜 모임까지 다양하게 활용하세요.</p>
-        </div>
-        <div class="complex-card">
-          <div class="icon">
-            <svg viewBox="0 0 24 24"><path stroke-linecap="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
-          </div>
-          <h3>키즈 라이브러리</h3>
-          <p>아이들을 위한 전용 도서관과 학습공간. 초품아 학세권과 시너지를 발휘하는 교육 특화 커뮤니티 시설.</p>
-        </div>
-        <div class="complex-card">
-          <div class="icon">
-            <svg viewBox="0 0 24 24"><path stroke-linecap="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/></svg>
-          </div>
-          <h3>지하 5층 주차장</h3>
-          <p>세대당 1.56대, 총 480대 규모의 넉넉한 지하주차장. EV 충전기 설치로 미래 모빌리티를 대비합니다.</p>
-        </div>
-      </div>
-
     </div>
   </section>
-</div><!-- /page-complex -->
+  <footer><div class="footer-bottom" style="border:none;padding:40px 0 0;"><span>© 2026 PENTA I 펜타원. All rights reserved.</span></div></footer>
+</div>
 
 
-<!-- ═══════════════════════════════════════════
-     게시판 PAGE
-═══════════════════════════════════════════ -->
+<!-- ════════════════════════════════════
+     PAGE: 게시판 + 상담폼
+════════════════════════════════════ -->
 <div id="page-board" class="page">
-  <div class="page-header">
-    <p class="label">COMMUNITY</p>
-    <h1>게시판</h1>
-    <div class="breadcrumb">
-      <span>HOME</span>
-      <span>›</span>
-      <span>게시판</span>
-      <span>›</span>
-      <span class="current">관심고객등록</span>
-    </div>
-  </div>
+  <section style="padding-top:140px;">
+    <div class="section-tag">NOTICE</div>
+    <h2 class="section-title">게시판</h2>
+    <p class="section-sub">펜타원의 최신 분양 소식과 공지사항을 확인하세요.</p>
 
-  <section class="board-section">
-    <div class="cont">
-      <div style="text-align:center;margin-bottom:40px;">
-        <div class="line-sage" style="margin:0 auto 16px;"></div>
-        <h2 class="sec-title">상담 문의</h2>
-        <p class="sec-sub">남겨주신 연락처로 담당 매니저가 빠르게 연락드립니다.</p>
+    <div class="bento-card fade-up" style="padding:0;overflow:hidden;margin-bottom:100px;">
+      <div style="padding:22px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <h3 style="font-size:17px;font-weight:700;">공지사항</h3>
+        <span style="font-size:13px;color:var(--text-dim);">총 5건</span>
+      </div>
+      <div class="notice-list">
+        <div class="notice-item"><span class="notice-type type-notice">공지</span><span class="notice-title">2026년 펜타원 분양 일정 안내</span><span class="notice-date">2026.04.14</span></div>
+        <div class="notice-item"><span class="notice-type type-news">뉴스</span><span class="notice-title">GTX-A 신설역 확정 — 펜타원 수혜 단지 선정</span><span class="notice-date">2026.03.28</span></div>
+        <div class="notice-item"><span class="notice-type type-notice">공지</span><span class="notice-title">홍보관 오픈 안내 (신갈동 58번지 현장)</span><span class="notice-date">2026.03.15</span></div>
+        <div class="notice-item"><span class="notice-type type-news">뉴스</span><span class="notice-title">용인시 기흥구 개발계획 발표 — 신갈동 수혜 예상</span><span class="notice-date">2026.02.20</span></div>
+        <div class="notice-item"><span class="notice-type type-notice">공지</span><span class="notice-title">사전 청약 안내 및 접수 방법</span><span class="notice-date">2026.02.01</span></div>
+      </div>
+    </div>
+
+    <!-- 상담 폼 -->
+    <div id="consult-form">
+      <div style="text-align:center;margin-bottom:48px;">
+        <div class="section-tag" style="justify-content:center;">CONSULTATION</div>
+        <h2 class="section-title">무료 상담 신청</h2>
+        <p style="font-size:16px;color:var(--text-dim);">전문 상담사가 1:1로 안내드립니다.<br>신청 후 24시간 이내 연락드립니다.</p>
       </div>
 
-      <div class="board-form-wrap">
-        <form id="board-form" onsubmit="submitBoard(event)" novalidate>
-          <div class="board-form-row">
-            <label for="b-name">이름 <span style="color:var(--sage);">*</span></label>
-            <input type="text" id="b-name" name="name" placeholder="성함을 입력해 주세요" required>
+      <div class="form-card fade-up">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:32px;padding-bottom:24px;border-bottom:1px solid var(--border);">
+          <div style="width:44px;height:44px;border-radius:12px;background:var(--gold-dim);border:1px solid var(--border-gold);display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:22px;">
+            <iconify-icon icon="solar:chat-round-dots-bold"></iconify-icon>
           </div>
-          <div class="board-form-row">
-            <label for="b-phone">연락처 <span style="color:var(--sage);">*</span></label>
-            <input type="tel" id="b-phone" name="phone" placeholder="010-0000-0000" required>
+          <div>
+            <h3 style="font-size:18px;font-weight:700;">펜타원 상담 신청</h3>
+            <p style="font-size:13px;color:var(--text-dim);">모든 항목을 입력해 주세요</p>
           </div>
-          <div class="board-form-row">
-            <label for="b-type">관심 타입 <span style="color:var(--sage);">*</span></label>
-            <select id="b-type" name="unit_type" required style="font-family:'Noto Sans KR',sans-serif;font-size:0.88rem;border:none;background:transparent;padding:14px 16px;width:100%;color:var(--dark);outline:none;cursor:pointer;">
-              <option value="">타입을 선택해 주세요</option>
-              <option value="59㎡">59㎡ TYPE</option>
-              <option value="84㎡">84㎡ TYPE</option>
-              <option value="모두 관심">모두 관심 있음</option>
-            </select>
-          </div>
-          <div class="board-form-row" style="align-items:flex-start;">
-            <label for="b-msg" style="padding-top:18px;">문의</label>
-            <textarea id="b-msg" name="message" placeholder="문의사항을 입력해 주세요."></textarea>
-          </div>
+        </div>
 
-          <div class="board-notice">
-            신오지역주택조합 추진위원회에서는 회원모집에 관한 정보를 제공하고 있습니다. 일반분양 관련 정보가 아님을 안내드리며, 실제 계약 전 반드시 공식 분양 사무소를 통해 내용을 확인하시기 바랍니다.<br><br>
-            아직 정식 가입은 조합원신청서를 작성 완료 후 접수 시 완료됩니다. 본 문의는 관심고객 등록 목적이며, 수집된 개인정보는 상담 목적으로만 사용됩니다.
+        <form id="consultation-form" onsubmit="submitConsultation(event)">
+          <div style="display:inline-flex;align-items:center;gap:8px;background:var(--gold-dim);border:1px solid var(--border-gold);border-radius:100px;padding:4px 14px;font-size:12px;font-weight:700;color:var(--gold);margin-bottom:24px;">
+            <iconify-icon icon="solar:user-bold"></iconify-icon> STEP 1 · 기본 정보
           </div>
+          <label class="form-label">이름 <span style="color:#f87171;">*</span></label>
+          <input id="f-name" type="text" class="form-input" placeholder="홍길동" required>
+          <label class="form-label">연락처 <span style="color:#f87171;">*</span></label>
+          <input id="f-phone" type="tel" class="form-input" placeholder="010-0000-0000" required>
+          <label class="form-label">이메일</label>
+          <input id="f-email" type="email" class="form-input" placeholder="example@email.com">
 
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:0 4px;">
-            <input type="checkbox" id="privacy-agree" required style="width:16px;height:16px;accent-color:var(--sage-dark);cursor:pointer;flex-shrink:0;">
-            <label for="privacy-agree" style="font-size:0.82rem;color:var(--mid);cursor:pointer;">개인정보 수집·이용에 동의합니다.</label>
+          <div style="display:inline-flex;align-items:center;gap:8px;background:var(--gold-dim);border:1px solid var(--border-gold);border-radius:100px;padding:4px 14px;font-size:12px;font-weight:700;color:var(--gold);margin-bottom:24px;margin-top:4px;">
+            <iconify-icon icon="solar:home-bold"></iconify-icon> STEP 2 · 관심 세대
           </div>
+          <label class="form-label">관심 평형</label>
+          <select id="f-unit" class="form-input">
+            <option value="">선택해주세요</option>
+            <option value="84A">84A타입 (3Bay 남향)</option>
+            <option value="84B">84B타입 (4Bay 코너)</option>
+            <option value="101">101타입 (알파룸+드레스룸)</option>
+            <option value="미정">아직 미정</option>
+          </select>
+          <label class="form-label">현재 거주 지역</label>
+          <input id="f-region" type="text" class="form-input" placeholder="예: 경기도 수원시">
 
-          <div class="board-btns">
-            <button type="reset" class="btn-reset" onclick="resetBoard()">등록 초기화</button>
-            <button type="submit" class="btn-submit" id="board-submit-btn">작성완료</button>
+          <div style="display:inline-flex;align-items:center;gap:8px;background:var(--gold-dim);border:1px solid var(--border-gold);border-radius:100px;padding:4px 14px;font-size:12px;font-weight:700;color:var(--gold);margin-bottom:24px;margin-top:4px;">
+            <iconify-icon icon="solar:chat-line-bold"></iconify-icon> STEP 3 · 문의 내용
           </div>
+          <label class="form-label">문의 사항</label>
+          <textarea id="f-message" class="form-input" placeholder="분양 일정, 가격, 평면 등 궁금하신 점을 자유롭게 적어주세요."></textarea>
 
-          <div class="board-success" id="board-success">
-            <p class="ok">✓ 상담 신청이 완료되었습니다!</p>
-            <p class="msg">담당 매니저가 빠르게 연락드리겠습니다.<br>VIP 직통 상담: <a href="tel:15551087" style="color:var(--sage-dark);font-weight:600;">1555-1087</a></p>
+          <div style="background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:24px;font-size:13px;color:var(--text-dim);line-height:1.7;">
+            <strong style="color:var(--text);">개인정보 수집·이용 동의</strong><br>
+            수집 항목: 이름, 연락처, 이메일 | 목적: 상담 및 분양 안내 | 보유 기간: 목적 달성 시까지
           </div>
+          <button type="submit" class="btn-primary" style="width:100%;justify-content:center;padding:18px;" id="submit-btn">
+            <div class="btn-icon"><iconify-icon icon="solar:paper-plane-bold"></iconify-icon></div>
+            상담 신청하기
+          </button>
         </form>
       </div>
-
     </div>
   </section>
-</div><!-- /page-board -->
 
-
-<!-- ─────────────── FOOTER ─────────────── -->
-<footer>
-  <div class="footer-inner">
-    <div class="footer-logo">
-      <div class="en">PENTA I</div>
-      <div class="kr">용인·신갈 펜타원</div>
+  <footer style="margin-top:80px;">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">PENTA I 펜타원</div>
+        <p class="footer-desc">경기 용인시 기흥구 신갈동 58번지 일대<br>지하5층~지상31층 2개동 303세대<br>시행: (주)엠에스티개발 | 시공: 한양<br>신탁: 코리아신탁 | 031-895-6813</p>
+      </div>
+      <div>
+        <div class="footer-h">바로가기</div>
+        <a class="footer-link" onclick="showPage('info')">사업안내</a>
+        <a class="footer-link" onclick="showPage('premium')">프리미엄</a>
+        <a class="footer-link" onclick="showPage('units')">세대정보</a>
+        <a class="footer-link" onclick="showPage('complex')">단지정보</a>
+      </div>
+      <div>
+        <div class="footer-h">문의</div>
+        <p class="footer-desc">홍보관 운영 09:00~18:00<br>(주말·공휴일 포함)<br><br>본 홈페이지의 이미지 및 평면은 소비자 이해를 돕기 위한 참고용으로 실제와 다를 수 있습니다.</p>
+      </div>
     </div>
-    <div class="footer-info">
-      <strong>용인·신갈 펜타원</strong> &nbsp;|&nbsp; 경기도 용인시 기흥구 신갈동 58번지 일대<br>
-      시행: 신오지역주택조합추진위원회 (고유번호: 131-80-28546) &nbsp;|&nbsp; 자금관리: (주)무궁화신탁 &nbsp;|&nbsp; 분양대행: 앰키앤씨<br>
-      ※ 본 내용은 홍보 목적으로 제공되며, 실제 분양 조건과 다를 수 있습니다.
+    <div class="footer-bottom">
+      <span>© 2026 PENTA I 펜타원. All rights reserved.</span>
+      <span>용인신갈 펜타원 분양 홍보관</span>
     </div>
-    <div class="footer-phone">
-      1555-1087
-      <small>VIP 직통 상담</small>
-    </div>
-  </div>
-  <div class="footer-copy">
-    ※ 아파트분양(예정) 신갈동 58번지 일대 지하5층~지상31층 2개동 303세대 &nbsp;|&nbsp;
-    ※ 본 페이지는 홍보를 위한 것으로, 실제 분양조건은 공식 분양 계약서에 따릅니다.
-  </div>
-</footer>
+  </footer>
+</div>
 
+<!-- TOAST -->
+<div id="toast"></div>
 
-<!-- ─────────────── SUPABASE SDK ─────────────── -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-
-<!-- ─────────────── SCRIPTS ─────────────── -->
 <script>
-  // ── Supabase 초기화 (anon public key — 클라이언트 노출 안전)
-  const _sb = supabase.createClient(
-    'https://tctilpuhknxucrlnhlky.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjdGlscHVoa254dWNybG5obGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzE3NjQsImV4cCI6MjA5MTcwNzc2NH0._mS10zf3ayR7nbdFxQJHfZS57_tzOakGm-WkyQB8bxU'
-  );
+// ══════════════════════════════════════════
+//  SUPABASE
+// ══════════════════════════════════════════
+const _sb = supabase.createClient(
+  'https://tctilpuhknxucrlnhlky.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjdGlscHVoa254dWNybG5obGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzE3NjQsImV4cCI6MjA5MTcwNzc2NH0._mS10zf3ayR7nbdFxQJHfZS57_tzOakGm-WkyQB8bxU'
+);
 
-  // ── Page navigation
-  function showPage(id) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById('page-' + id).classList.add('active');
+// ══════════════════════════════════════════
+//  SCROLL ANIMATION: WebP 프레임 시퀀스
+// ══════════════════════════════════════════
+const TOTAL_FRAMES = 60;
+const frames = new Array(TOTAL_FRAMES);
+let loadedCount = 0;
+let allLoaded = false;
+let currentFrameF = 0; // float for smooth interpolation
+let targetFrame = 0;
+let rafId = null;
 
-    // Update nav button active states
-    ['business','premium','units','complex','board'].forEach(name => {
-      const btn = document.getElementById('nb-' + name);
-      if (btn) btn.classList.toggle('active', name === id);
+const canvas = document.getElementById('scroll-canvas');
+const ctx = canvas.getContext('2d', { alpha: false });
+const progressFill = document.getElementById('progress-fill');
+const loaderBar = document.getElementById('loader-bar');
+const loaderText = document.getElementById('loader-text');
+const loaderEl = document.getElementById('frame-loader');
+
+// 캔버스 크기 설정
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  // 현재 프레임 다시 그리기
+  if (frames[Math.floor(currentFrameF)]?.complete) {
+    drawFrame(Math.floor(currentFrameF));
+  }
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// 프레임 그리기 (cover fit)
+function drawFrame(idx) {
+  const img = frames[idx];
+  if (!img || !img.complete || !img.naturalWidth) return;
+
+  const cw = canvas.width, ch = canvas.height;
+  const iw = img.naturalWidth, ih = img.naturalHeight;
+  const scale = Math.max(cw / iw, ch / ih);
+  const dw = iw * scale, dh = ih * scale;
+  const dx = (cw - dw) / 2, dy = (ch - dh) / 2;
+
+  ctx.drawImage(img, dx, dy, dw, dh);
+}
+
+// RAF 루프 — 부드러운 프레임 보간
+function animLoop() {
+  // lerp: 현재 → 목표 (빠른 수렴)
+  currentFrameF += (targetFrame - currentFrameF) * 0.18;
+  const idx = Math.round(currentFrameF);
+  const safeIdx = Math.max(0, Math.min(TOTAL_FRAMES - 1, idx));
+
+  drawFrame(safeIdx);
+
+  // 프로그레스 바 업데이트
+  const progress = safeIdx / (TOTAL_FRAMES - 1);
+  progressFill.style.transform = `scaleX(${progress})`;
+
+  rafId = requestAnimationFrame(animLoop);
+}
+
+// 스크롤 이벤트 → targetFrame 업데이트
+function handleScroll() {
+  const section = document.getElementById('scroll-section');
+  if (!section) return;
+
+  const rect = section.getBoundingClientRect();
+  const scrollable = section.offsetHeight - window.innerHeight;
+  if (scrollable <= 0) return;
+
+  const scrolled = Math.max(0, -rect.top);
+  const progress = Math.min(1, scrolled / scrollable);
+
+  targetFrame = progress * (TOTAL_FRAMES - 1);
+}
+window.addEventListener('scroll', handleScroll, { passive: true });
+
+// 프레임 로딩 (우선순위: 앞 프레임 먼저)
+function loadFrames() {
+  let loadedForStart = 0;
+
+  for (let i = 0; i < TOTAL_FRAMES; i++) {
+    const img = new Image();
+    img.decoding = 'async';
+    const padded = String(i).padStart(4, '0');
+    img.src = `./images/scroll_${padded}.webp`;
+
+    img.onload = () => {
+      loadedCount++;
+      loadedForStart++;
+
+      // 로딩 바 업데이트
+      const pct = Math.round((loadedCount / TOTAL_FRAMES) * 100);
+      loaderBar.style.width = pct + '%';
+      loaderText.textContent = `${pct}% 로딩 중...`;
+
+      // 첫 프레임 로드되면 즉시 그리기
+      if (i === 0 && img.complete) drawFrame(0);
+
+      // 10프레임 이상 로드되면 로더 숨기고 애니메이션 시작
+      if (loadedForStart === 10 && !allLoaded) {
+        loaderEl.classList.add('hidden');
+        setTimeout(() => { loaderEl.style.display = 'none'; }, 700);
+        if (!rafId) animLoop();
+      }
+
+      // 전체 완료
+      if (loadedCount >= TOTAL_FRAMES) {
+        allLoaded = true;
+        loaderEl.classList.add('hidden');
+        setTimeout(() => { loaderEl.style.display = 'none'; }, 700);
+        if (!rafId) animLoop();
+      }
+    };
+
+    img.onerror = () => {
+      loadedCount++;
+      frames[i] = null;
+    };
+
+    frames[i] = img;
+  }
+}
+
+// ══════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════
+const PAGE_IDX = { home:0, info:1, premium:2, units:3, complex:4, board:5 };
+
+function switchType(type) {
+  const g84 = document.getElementById('gallery-84');
+  const g59 = document.getElementById('gallery-59');
+  const t84 = document.getElementById('tab-84');
+  const t59 = document.getElementById('tab-59');
+  if (!g84 || !g59) return;
+  g84.style.display = type === '84' ? 'block' : 'none';
+  g59.style.display = type === '59' ? 'block' : 'none';
+  if (t84 && t59) {
+    t84.style.background = type === '84' ? 'var(--gold)' : 'var(--glass2)';
+    t84.style.color      = type === '84' ? '#0c0c0e'    : 'var(--text-dim)';
+    t84.style.fontWeight = type === '84' ? '700'        : '500';
+    t59.style.background = type === '59' ? 'var(--gold)' : 'var(--glass2)';
+    t59.style.color      = type === '59' ? '#0c0c0e'    : 'var(--text-dim)';
+    t59.style.fontWeight = type === '59' ? '700'        : '500';
+  }
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  const items = document.querySelectorAll('.nav-item');
+  if (items[PAGE_IDX[id]]) items[PAGE_IDX[id]].classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // RAF: 홈 페이지에서만 스크롤 애니메이션 동작
+  if (id === 'home') {
+    if (!rafId && allLoaded) rafId = requestAnimationFrame(animLoop);
+  } else {
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    setTimeout(initFadeUp, 150);
+  }
+}
+
+function goConsult() {
+  showPage('board');
+  setTimeout(() => {
+    const el = document.getElementById('consult-form');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 300);
+}
+
+function scrollToScroll() {
+  const el = document.getElementById('scroll-section');
+  if (el) el.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ══════════════════════════════════════════
+//  FADE UP OBSERVER
+// ══════════════════════════════════════════
+function initFadeUp() {
+  const els = document.querySelectorAll('.fade-up:not(.visible)');
+  if (!els.length) return;
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
     });
+  }, { threshold: 0.07 });
+  els.forEach(el => io.observe(el));
+}
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+// ══════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.innerHTML = (type === 'success' ? '✓ ' : '✕ ') + msg;
+  t.className = 'show ' + (type || 'success');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.className = ''; }, 4500);
+}
 
-    // Close mobile menu if open
-    document.getElementById('mobile-menu').classList.remove('open');
+// ══════════════════════════════════════════
+//  FORM SUBMIT
+// ══════════════════════════════════════════
+async function submitConsultation(e) {
+  e.preventDefault();
+  const btn = document.getElementById('submit-btn');
+  const name = document.getElementById('f-name').value.trim();
+  const phone = document.getElementById('f-phone').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  const unitType = document.getElementById('f-unit').value;
+  const region = document.getElementById('f-region').value.trim();
+  const message = document.getElementById('f-message').value.trim();
+
+  if (!name || !phone) { showToast('이름과 연락처는 필수 항목입니다.', 'error'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<div class="btn-icon"><iconify-icon icon="solar:refresh-circle-bold" style="animation:spin 1s linear infinite;display:block;"></iconify-icon></div> 신청 중...';
+
+  try {
+    const fullMsg = [region ? '거주지역: ' + region : '', message].filter(Boolean).join('\n') || null;
+    const { error } = await _sb.from('consultations').insert([{
+      name, phone,
+      email: email || null,
+      unit_type: unitType || null,
+      message: fullMsg
+    }]);
+    if (error) throw error;
+    showToast('상담 신청이 완료되었습니다! 24시간 내 연락드립니다.', 'success');
+    document.getElementById('consultation-form').reset();
+  } catch (err) {
+    console.error('Supabase error:', err);
+    showToast('오류가 발생했습니다. 잠시 후 다시 시도해주세요.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<div class="btn-icon"><iconify-icon icon="solar:paper-plane-bold"></iconify-icon></div> 상담 신청하기';
   }
+}
 
-  // ── Mobile menu toggle
-  function toggleMobile() {
-    document.getElementById('mobile-menu').classList.toggle('open');
-  }
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  loadFrames();
+  setTimeout(initFadeUp, 400);
 
-  // ── Desktop nav responsive
-  function updateNav() {
-    const menu = document.querySelector('.nav-menu');
-    const cta  = document.querySelector('.nav-cta');
-    const ham  = document.getElementById('ham-btn');
-    if (window.innerWidth <= 900) {
-      menu.style.display = 'none';
-      cta.style.display  = 'none';
-      ham.style.display  = 'block';
-    } else {
-      menu.style.display = 'flex';
-      cta.style.display  = 'inline-block';
-      ham.style.display  = 'none';
-      document.getElementById('mobile-menu').classList.remove('open');
-    }
-  }
-  updateNav();
-  window.addEventListener('resize', updateNav);
-
-  // ── Logo click → show logo text if image fails
-  document.querySelector('.nav-logo img').addEventListener('error', function () {
-    this.style.display = 'none';
-    document.getElementById('logo-txt').style.display = 'block';
-  });
-
-  // ── Unit type tabs
-  function switchUnit(type) {
-    ['59','84'].forEach(t => {
-      document.getElementById('tab' + t).classList.toggle('active', t === type);
-      document.getElementById('panel' + t).classList.toggle('active', t === type);
-    });
-  }
-
-  // ── Phone auto-format
-  document.getElementById('b-phone').addEventListener('input', function () {
-    let v = this.value.replace(/\D/g, '');
-    if (v.length >= 11)     v = v.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
-    else if (v.length >= 7) v = v.replace(/(\d{3})(\d{3,4})(\d{0,4})/, '$1-$2-$3').replace(/-$/, '');
-    else if (v.length >= 4) v = v.replace(/(\d{3})(\d{0,4})/, '$1-$2').replace(/-$/, '');
-    this.value = v;
-  });
-
-  // ── Board form submit — Supabase 연동 완료
-  async function submitBoard(e) {
-    e.preventDefault();
-    const btn     = document.getElementById('board-submit-btn');
-    const success = document.getElementById('board-success');
-
-    const name     = document.getElementById('b-name').value.trim();
-    const phone    = document.getElementById('b-phone').value.trim();
-    const unitType = document.getElementById('b-type').value;
-    const message  = document.getElementById('b-msg').value.trim();
-    const privacy  = document.getElementById('privacy-agree').checked;
-
-    if (!name || !phone || !unitType || !privacy) {
-      alert('필수 항목(이름, 연락처, 관심 타입, 개인정보 동의)을 모두 입력해 주세요.');
-      return;
-    }
-
-    btn.disabled = true;
-    btn.textContent = '저장 중...';
-
-    try {
-      const { error } = await _sb
-        .from('consultations')
-        .insert([{ name, phone, unit_type: unitType, message }]);
-
-      if (error) throw error;
-
-      btn.style.display = 'none';
-      success.style.display = 'block';
-      e.target.querySelectorAll('input, textarea, select').forEach(el => el.disabled = true);
-
-    } catch (err) {
-      console.error('Supabase 저장 오류:', err);
-      btn.disabled = false;
-      btn.textContent = '작성완료';
-      alert('저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.\n\n직접 전화 문의: 1555-1087');
-    }
-  }
-
-  function resetBoard() {
-    document.getElementById('board-submit-btn').style.display = '';
-    document.getElementById('board-submit-btn').disabled = false;
-    document.getElementById('board-submit-btn').textContent = '작성완료';
-    document.getElementById('board-success').style.display = 'none';
-    document.querySelectorAll('#board-form input, #board-form textarea, #board-form select')
-      .forEach(el => el.disabled = false);
-  }
+  // 홈 페이지 RAF 시작 (로드 후)
+  // loadFrames에서 자동으로 시작됨
+});
 </script>
-
 </body>
 </html>
