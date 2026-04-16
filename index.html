@@ -552,6 +552,59 @@
   .delay-2 { transition-delay: 0.2s; }
   .delay-3 { transition-delay: 0.3s; }
 
+  /* ── MOBILE FAB ── */
+  .fab-group {
+    display: none;
+    position: fixed;
+    bottom: 28px;
+    right: 20px;
+    z-index: 990;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .fab-btn {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 6px 28px rgba(0,0,0,0.45);
+    transition: transform 0.25s var(--spring), box-shadow 0.25s var(--spring);
+    position: relative;
+  }
+  .fab-btn:active { transform: scale(0.92); }
+  .fab-call {
+    background: #1a1a1d;
+    color: var(--gold);
+    border: 1.5px solid var(--border-gold);
+  }
+  .fab-call:hover { transform: scale(1.08); box-shadow: 0 8px 32px rgba(201,165,90,0.25); }
+  .fab-consult {
+    background: var(--gold);
+    color: #0c0c0e;
+  }
+  .fab-consult:hover { transform: scale(1.08); box-shadow: 0 8px 32px rgba(201,165,90,0.5); }
+  .fab-label {
+    position: absolute;
+    right: 64px;
+    background: rgba(12,12,14,0.88);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateX(6px);
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  .fab-btn:hover .fab-label { opacity: 1; transform: translateX(0); }
+
   /* ── RESPONSIVE ── */
   @media (max-width: 960px) {
     .bento { grid-template-columns: 1fr; }
@@ -559,19 +612,67 @@
     .stats-row { grid-template-columns: repeat(2,1fr); }
     .location-grid { grid-template-columns: 1fr; }
     .interior-grid { grid-template-columns: 1fr; }
-    .premium-grid { grid-template-columns: 1fr; }
+    .premium-grid { grid-template-columns: repeat(2,1fr); }
     .footer-grid { grid-template-columns: 1fr; gap: 40px; }
+    .fab-group { display: flex; }
   }
   @media (max-width: 640px) {
-    .nav-pill { padding: 8px 10px; gap: 2px; max-width: calc(100vw - 20px); }
-    .nav-item { padding: 6px 9px; font-size: 11px; }
-    .nav-logo { font-size: 12px; padding: 0 8px 0 2px; }
-    .nav-cta { padding: 7px 12px; font-size: 11px; }
-    section { padding: 60px 5vw; }
-    .hero-content { padding: 0 5vw 60px; }
-    .stats-row { grid-template-columns: 1fr 1fr; }
-    .form-card { padding: 28px 20px; }
+    /* 네비 - 가로 스크롤 */
+    .nav-pill {
+      padding: 8px 10px;
+      gap: 2px;
+      left: 10px;
+      right: 10px;
+      transform: none;
+      width: calc(100vw - 20px);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .nav-pill::-webkit-scrollbar { display: none; }
+    .nav-logo { font-size: 12px; padding: 0 8px 0 2px; flex-shrink: 0; }
+    .nav-item { padding: 6px 10px; font-size: 11px; flex-shrink: 0; }
+    .nav-cta { padding: 7px 13px; font-size: 11px; flex-shrink: 0; margin-left: 4px; }
+
+    /* 섹션 */
+    section { padding: 56px 5vw; }
+    .hero-content { padding: 0 5vw 80px; }
+    .hero-title { font-size: clamp(32px, 10vw, 52px); }
+    .hero-sub { font-size: 14px; }
+    .hero-btns { flex-direction: column; gap: 10px; }
+    .hero-btns .btn-primary,
+    .hero-btns .btn-secondary { width: 100%; justify-content: center; }
+
+    /* 통계 */
+    .stats-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-box { padding: 20px 16px; }
+    .stat-box-num { font-size: 30px; }
+
+    /* 프리미엄 */
+    .premium-grid { grid-template-columns: 1fr; }
+
+    /* 폼 */
+    .form-card { padding: 24px 16px; border-radius: 18px; }
+
+    /* 스크롤 애니 텍스트 */
     .scroll-anim-text { flex-direction: column; gap: 16px; align-items: flex-start; bottom: 60px; }
+    .scroll-headline { font-size: clamp(22px, 7vw, 36px); }
+
+    /* 푸터 */
+    .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+    .footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
+
+    /* FAB 위 여백 (토스트 겹침 방지) */
+    #toast { bottom: 100px; right: 16px; }
+
+    /* 테이블 모바일 */
+    .unit-table th, .unit-table td { padding: 12px 12px; font-size: 13px; }
+
+    /* 교통 리스트 */
+    .transport-item { padding: 14px 16px; gap: 12px; }
+
+    /* 위치 지도 */
+    .location-map img { height: 260px; }
   }
   @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
 </style>
@@ -599,6 +700,20 @@
   <button class="nav-item" onclick="showPage('board')">게시판</button>
   <button class="nav-cta" onclick="goConsult()">상담신청</button>
 </nav>
+
+<!-- ── 모바일 FAB ── -->
+<div class="fab-group">
+  <a href="tel:1555-1087">
+    <button class="fab-btn fab-call">
+      <iconify-icon icon="solar:phone-bold"></iconify-icon>
+      <span class="fab-label">전화하기</span>
+    </button>
+  </a>
+  <button class="fab-btn fab-consult" onclick="goConsult()">
+    <iconify-icon icon="solar:chat-round-dots-bold"></iconify-icon>
+    <span class="fab-label">상담신청</span>
+  </button>
+</div>
 
 
 <!-- ════════════════════════════════════
