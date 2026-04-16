@@ -470,8 +470,9 @@
   .premium-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
   .premium-card {
     background: var(--bg2); border: 1px solid var(--border); border-radius: 22px;
-    padding: 34px 30px; position: relative; overflow: hidden;
+    padding: 0; position: relative; overflow: hidden;
     transition: all 0.4s var(--spring);
+    display: flex; flex-direction: column;
   }
   .premium-card:hover { transform: translateY(-7px); border-color: var(--border-gold); box-shadow: 0 16px 48px rgba(0,0,0,0.1); }
   .premium-card::after {
@@ -480,11 +481,17 @@
     opacity: 0; transition: opacity 0.4s;
   }
   .premium-card:hover::after { opacity: 1; }
-  .premium-num { font-size: 52px; font-weight: 900; color: rgba(201,165,90,0.08); letter-spacing: -0.04em; position: absolute; top: 16px; right: 20px; line-height: 1; }
-  .premium-icon { width: 52px; height: 52px; border-radius: 14px; background: var(--gold-dim); border: 1px solid var(--border-gold); display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 26px; margin-bottom: 20px; }
-  .premium-title { font-size: 19px; font-weight: 700; margin-bottom: 10px; }
+  .premium-card-img {
+    width: 100%; height: 180px; object-fit: cover; display: block;
+    transition: transform 0.5s var(--spring);
+  }
+  .premium-card:hover .premium-card-img { transform: scale(1.04); }
+  .premium-card-body { padding: 28px 28px 32px; flex: 1; position: relative; }
+  .premium-num { font-size: 52px; font-weight: 900; color: rgba(160,120,48,0.08); letter-spacing: -0.04em; position: absolute; top: 12px; right: 18px; line-height: 1; }
+  .premium-icon { width: 48px; height: 48px; border-radius: 13px; background: var(--gold-dim); border: 1px solid var(--border-gold); display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 24px; margin-bottom: 16px; }
+  .premium-title { font-size: 18px; font-weight: 700; margin-bottom: 9px; }
   .premium-desc { font-size: 14px; color: var(--text-dim); line-height: 1.75; }
-  .premium-list-items { margin-top: 18px; display: flex; flex-direction: column; gap: 9px; }
+  .premium-list-items { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
   .premium-li { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--text-dim); }
   .premium-li::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
 
@@ -1015,67 +1022,85 @@
 
     <div class="premium-grid fade-up">
       <div class="premium-card">
-        <div class="premium-num">01</div>
-        <div class="premium-icon"><iconify-icon icon="solar:routing-bold"></iconify-icon></div>
-        <h3 class="premium-title">교통 프리미엄</h3>
-        <p class="premium-desc">GTX-A 신설역 도보 3분, 경부고속도로 신갈IC 직결, 수인분당선 신갈역 이용 가능한 트리플 교통망.</p>
-        <div class="premium-list-items">
-          <div class="premium-li">GTX-A 신설역 도보 3분</div>
-          <div class="premium-li">신갈IC 차량 2분</div>
-          <div class="premium-li">강남 20분대 출퇴근</div>
+        <img src="./images/location_real.webp" class="premium-card-img" alt="교통">
+        <div class="premium-card-body">
+          <div class="premium-num">01</div>
+          <div class="premium-icon"><iconify-icon icon="solar:routing-bold"></iconify-icon></div>
+          <h3 class="premium-title">교통 프리미엄</h3>
+          <p class="premium-desc">GTX-A 신설역 도보 3분, 경부고속도로 신갈IC 직결, 수인분당선 신갈역 이용 가능한 트리플 교통망.</p>
+          <div class="premium-list-items">
+            <div class="premium-li">GTX-A 신설역 도보 3분</div>
+            <div class="premium-li">신갈IC 차량 2분</div>
+            <div class="premium-li">강남 20분대 출퇴근</div>
+          </div>
         </div>
       </div>
       <div class="premium-card">
-        <div class="premium-num">02</div>
-        <div class="premium-icon"><iconify-icon icon="solar:buildings-bold"></iconify-icon></div>
-        <h3 class="premium-title">커뮤니티 프리미엄</h3>
-        <p class="premium-desc">스카이브릿지에서 시작되는 품격 높은 커뮤니티. 피트니스, 스카이라운지, 게스트하우스까지.</p>
-        <div class="premium-list-items">
-          <div class="premium-li">스카이라운지 (최상층)</div>
-          <div class="premium-li">피트니스센터 + 사우나</div>
-          <div class="premium-li">키즈카페 + 독서실</div>
-          <div class="premium-li">게스트하우스</div>
+        <img src="./images/community.webp" class="premium-card-img" alt="커뮤니티">
+        <div class="premium-card-body">
+          <div class="premium-num">02</div>
+          <div class="premium-icon"><iconify-icon icon="solar:buildings-bold"></iconify-icon></div>
+          <h3 class="premium-title">커뮤니티 프리미엄</h3>
+          <p class="premium-desc">스카이브릿지에서 시작되는 품격 높은 커뮤니티. 피트니스, 스카이라운지, 게스트하우스까지.</p>
+          <div class="premium-list-items">
+            <div class="premium-li">스카이라운지 (최상층)</div>
+            <div class="premium-li">피트니스센터 + 사우나</div>
+            <div class="premium-li">키즈카페 + 독서실</div>
+            <div class="premium-li">게스트하우스</div>
+          </div>
         </div>
       </div>
       <div class="premium-card">
-        <div class="premium-num">03</div>
-        <div class="premium-icon"><iconify-icon icon="solar:tree-bold"></iconify-icon></div>
-        <h3 class="premium-title">자연 프리미엄</h3>
-        <p class="premium-desc">신갈저수지 조망권, 단지 내 숲길 산책로, 옥상 정원 등 도심 속 힐링 공간.</p>
-        <div class="premium-list-items">
-          <div class="premium-li">신갈저수지 조망 가구</div>
-          <div class="premium-li">단지 내 조경 산책로</div>
-          <div class="premium-li">옥상 루프탑 정원</div>
+        <img src="./images/exterior_wide.webp" class="premium-card-img" alt="자연환경">
+        <div class="premium-card-body">
+          <div class="premium-num">03</div>
+          <div class="premium-icon"><iconify-icon icon="solar:tree-bold"></iconify-icon></div>
+          <h3 class="premium-title">자연 프리미엄</h3>
+          <p class="premium-desc">신갈저수지 조망권, 단지 내 숲길 산책로, 옥상 정원 등 도심 속 힐링 공간.</p>
+          <div class="premium-list-items">
+            <div class="premium-li">신갈저수지 조망 가구</div>
+            <div class="premium-li">단지 내 조경 산책로</div>
+            <div class="premium-li">옥상 루프탑 정원</div>
+          </div>
         </div>
       </div>
       <div class="premium-card">
-        <div class="premium-num">04</div>
-        <div class="premium-icon"><iconify-icon icon="solar:smart-home-bold"></iconify-icon></div>
-        <h3 class="premium-title">스마트 프리미엄</h3>
-        <p class="premium-desc">AI 홈 시스템, 스마트 주차 관리, 무인 택배함, 에너지 절감 시스템 적용.</p>
-        <div class="premium-list-items">
-          <div class="premium-li">AI 스마트홈 시스템</div>
-          <div class="premium-li">스마트 자동 주차</div>
-          <div class="premium-li">에너지 절감 시스템</div>
+        <img src="./images/building_premium.webp" class="premium-card-img" alt="스마트홈">
+        <div class="premium-card-body">
+          <div class="premium-num">04</div>
+          <div class="premium-icon"><iconify-icon icon="solar:smart-home-bold"></iconify-icon></div>
+          <h3 class="premium-title">스마트 프리미엄</h3>
+          <p class="premium-desc">AI 홈 시스템, 스마트 주차 관리, 무인 택배함, 에너지 절감 시스템 적용.</p>
+          <div class="premium-list-items">
+            <div class="premium-li">AI 스마트홈 시스템</div>
+            <div class="premium-li">스마트 자동 주차</div>
+            <div class="premium-li">에너지 절감 시스템</div>
+          </div>
         </div>
       </div>
       <div class="premium-card">
-        <div class="premium-num">05</div>
-        <div class="premium-icon"><iconify-icon icon="solar:shield-check-bold"></iconify-icon></div>
-        <h3 class="premium-title">안전 프리미엄</h3>
-        <p class="premium-desc">24시간 유인 경비 시스템, AI CCTV, 세대별 방범 센서로 완벽한 보안 환경 구축.</p>
-        <div class="premium-list-items">
-          <div class="premium-li">24시간 유인 경비</div>
-          <div class="premium-li">AI 스마트 CCTV</div>
-          <div class="premium-li">세대별 방범 센서</div>
+        <img src="./images/exterior_close.webp" class="premium-card-img" alt="안전·보안">
+        <div class="premium-card-body">
+          <div class="premium-num">05</div>
+          <div class="premium-icon"><iconify-icon icon="solar:shield-check-bold"></iconify-icon></div>
+          <h3 class="premium-title">안전 프리미엄</h3>
+          <p class="premium-desc">24시간 유인 경비 시스템, AI CCTV, 세대별 방범 센서로 완벽한 보안 환경 구축.</p>
+          <div class="premium-list-items">
+            <div class="premium-li">24시간 유인 경비</div>
+            <div class="premium-li">AI 스마트 CCTV</div>
+            <div class="premium-li">세대별 방범 센서</div>
+          </div>
         </div>
       </div>
       <div class="premium-card" style="background:var(--gold-dim);border-color:var(--border-gold);">
-        <div class="premium-num" style="color:rgba(201,165,90,0.3);">+</div>
-        <div class="premium-icon" style="background:rgba(201,165,90,0.2);"><iconify-icon icon="solar:star-bold"></iconify-icon></div>
-        <h3 class="premium-title" style="color:var(--gold);">지금 상담하세요</h3>
-        <p class="premium-desc">5가지 프리미엄이 한곳에 모인 펜타원. 선착순 사전 상담 신청 시 우선 분양 안내를 받으실 수 있습니다.</p>
-        <button class="btn-primary" style="margin-top:20px;font-size:14px;padding:12px 20px;" onclick="goConsult()">상담 신청하기</button>
+        <img src="./images/living_84.webp" class="premium-card-img" alt="펜타원">
+        <div class="premium-card-body">
+          <div class="premium-num" style="color:rgba(160,120,48,0.2);">+</div>
+          <div class="premium-icon" style="background:rgba(160,120,48,0.15);"><iconify-icon icon="solar:star-bold"></iconify-icon></div>
+          <h3 class="premium-title" style="color:var(--gold);">지금 상담하세요</h3>
+          <p class="premium-desc">5가지 프리미엄이 한곳에 모인 펜타원. 선착순 사전 상담 신청 시 우선 분양 안내를 받으실 수 있습니다.</p>
+          <button class="btn-primary" style="margin-top:20px;font-size:14px;padding:12px 20px;" onclick="goConsult()">상담 신청하기</button>
+        </div>
       </div>
     </div>
 
@@ -1122,13 +1147,14 @@
     <!-- 타입 카드 -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:60px;" class="fade-up">
       <div class="bento-card" style="padding:0;overflow:hidden;">
-        <div style="background:linear-gradient(135deg,rgba(201,165,90,0.15) 0%,transparent 100%);padding:28px 28px 0;">
+        <img src="./images/living_59.webp" alt="59타입 거실" style="width:100%;height:200px;object-fit:cover;display:block;transition:transform 0.5s var(--spring);" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">
+        <div style="background:linear-gradient(135deg,rgba(201,165,90,0.15) 0%,transparent 100%);padding:24px 28px 0;">
           <span class="bento-badge">59타입</span>
           <h3 style="font-size:34px;font-weight:900;color:var(--gold);letter-spacing:-0.03em;margin:12px 0 4px;">59㎡</h3>
           <p style="font-size:13px;color:var(--text-dim);">102세대</p>
         </div>
-        <div style="padding:20px 28px 28px;font-size:14px;color:var(--text-dim);line-height:1.9;">
-          <p>· 거실+주방+방2+욕실2</p><p>· 드레스룸 기본 제공</p><p>· 알파룸 설계</p>
+        <div style="padding:16px 28px 28px;font-size:14px;color:var(--text-dim);line-height:1.9;">
+          <p>· 거실+주방+방3+욕실2</p><p>· 드레스룸 기본 제공</p><p>· 알파룸 설계</p>
         </div>
       </div>
       <div class="bento-card" style="padding:0;overflow:hidden;">
@@ -1150,7 +1176,7 @@
         <table class="unit-table">
           <thead><tr><th>타입</th><th>세대수</th><th>방/화장실</th><th>특징</th></tr></thead>
           <tbody>
-            <tr><td><span class="unit-badge badge-gold">59타입</span></td><td>102세대</td><td>2/2</td><td>드레스룸 · 알파룸</td></tr>
+            <tr><td><span class="unit-badge badge-gold">59타입</span></td><td>102세대</td><td>3/2</td><td>드레스룸 · 알파룸</td></tr>
             <tr><td><span class="unit-badge badge-gold">84타입</span></td><td>201세대</td><td>3/2</td><td>남향 · 드레스룸 · 팬트리</td></tr>
             <tr style="font-weight:700;background:var(--glass);"><td colspan="1" style="color:var(--gold);">합계</td><td style="color:var(--gold);">303세대</td><td colspan="2"></td></tr>
           </tbody>
