@@ -409,7 +409,7 @@
   /* ── LOCATION ── */
   .location-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; }
   .location-map { border-radius: 20px; overflow: hidden; border: 1px solid var(--border); position: relative; }
-  .location-map img { width: 100%; height: auto; max-height: 420px; object-fit: contain; background: var(--bg2); display: block; filter: saturate(0.9) brightness(0.95); transition: filter 0.4s; }
+  .location-map img { width: 100%; height: auto; object-fit: contain; background: var(--bg2); display: block; transition: filter 0.4s; }
   .location-map:hover img { filter: saturate(1.05) brightness(1); }
   .location-map-overlay { position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(160,120,48,0.07) 0%, transparent 65%); }
   .location-pin {
@@ -876,7 +876,7 @@
 
     <div class="location-grid fade-up">
       <div class="location-map">
-        <img src="./images/location_real.webp" alt="펜타원 위치 지도">
+        <img src="./images/위치지도.png" alt="펜타원 위치 지도">
         <div class="location-map-overlay"></div>
         <div class="location-pin"><iconify-icon icon="solar:map-point-bold"></iconify-icon></div>
       </div>
@@ -1001,7 +1001,7 @@
         </div>
       </div>
       <div class="location-map">
-        <img src="./images/location_real.webp" alt="입지 지도">
+        <img src="./images/위치지도.png" alt="입지 지도">
         <div class="location-map-overlay"></div>
         <div class="location-pin"><iconify-icon icon="solar:home-bold"></iconify-icon></div>
       </div>
