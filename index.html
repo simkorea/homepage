@@ -1794,14 +1794,63 @@ async function submitConsultation(e) {
 }
 
 // ══════════════════════════════════════════
+//  네이버 광고 부정클릭 추적
+// ══════════════════════════════════════════
+(async function trackAdClick() {
+  const params = new URLSearchParams(window.location.search);
+  const NAVER_PARAMS = ['NaPm', 'nvadId', 'n_keyword', 'na_keyword', 'nclicks', 'n_media'];
+  const foundParam = NAVER_PARAMS.find(p => params.has(p));
+  if (!foundParam) return;
+
+  const LOG_KEY = 'penta_ad_log';
+  const now = Date.now();
+  const TEN_MIN = 10 * 60 * 1000;
+
+  // localStorage 방문 기록 조회
+  let log = [];
+  try { log = JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch(e) {}
+
+  // 10분 내 방문 횟수 (현재 포함 전)
+  const recentVisits = log.filter(t => now - t < TEN_MIN);
+  const isSuspicious = recentVisits.length >= 2; // 10분 내 3번째 이상
+
+  // 기록 갱신 (최근 50개 유지)
+  log.push(now);
+  if (log.length > 50) log = log.slice(-50);
+  localStorage.setItem(LOG_KEY, JSON.stringify(log));
+
+  // 의심 방문 토스트 표시
+  if (isSuspicious) {
+    const t = document.getElementById('toast');
+    if (t) {
+      t.textContent = '⚠️ 비정상적인 반복 접속이 감지되었습니다.';
+      t.style.opacity = '1';
+      t.style.transform = 'translateY(0)';
+      setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(8px)'; }, 5000);
+    }
+  }
+
+  // IP 조회 → Supabase 기록
+  try {
+    const ipRes = await fetch('https://api.ipify.org?format=json');
+    const { ip } = await ipRes.json();
+    await _sb.from('ad_clicks').insert({
+      ip_address: ip,
+      param: `${foundParam}=${params.get(foundParam)}`,
+      user_agent: navigator.userAgent.substring(0, 500),
+      is_suspicious: isSuspicious
+    });
+  } catch(e) {
+    console.warn('[AdTrack] 기록 실패:', e);
+  }
+})();
+
+// ══════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
   loadFrames();
   setTimeout(initFadeUp, 400);
-
-  // 홈 페이지 RAF 시작 (로드 후)
-  // loadFrames에서 자동으로 시작됨
 });
 </script>
 </body>
