@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /admin.html
 
-Sitemap: https://ph1603.vercel.app/sitemap.xml
+Sitemap: https://ph1603-sigma.vercel.app/sitemap.xml
