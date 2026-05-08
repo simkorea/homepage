@@ -1558,17 +1558,16 @@ async function submitConsultation(e) {
   btn.innerHTML = '<iconify-icon icon="solar:refresh-circle-bold" style="animation:spin 1s linear infinite;display:inline-block;font-size:18px;"></iconify-icon> 등록 중...';
 
   try {
-    const { error } = await _sb.from('consultations').insert([{
-      name,
-      phone,
-      unit_type: unitType || 'PH1603',
-      message: (message ? '[PH1603] ' + message : '[PH1603 관심고객 등록]')
-    }]);
-    if (error) throw error;
+    const res = await fetch('/api/consult', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, phone, unit_type: unitType, message })
+    });
+    if (!res.ok) throw new Error('서버 오류');
     showToast('관심고객 등록이 완료되었습니다! 24시간 내 연락드립니다.', 'success');
     document.getElementById('consultation-form').reset();
   } catch (err) {
-    console.error('Supabase error:', err);
+    console.error('Submit error:', err);
     showToast('오류가 발생했습니다. 잠시 후 다시 시도해주세요.', 'error');
   } finally {
     btn.disabled = false;
