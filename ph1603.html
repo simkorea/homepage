@@ -1562,8 +1562,9 @@ async function submitConsultation(e) {
     const { error } = await _sb.from('consultations').insert([{
       name,
       phone,
-      unit_type: unitType || 'PH1603',
-      message: (message ? '[PH1603] ' + message : '[PH1603 관심고객 등록]')
+      unit_type: unitType || null,
+      message: message || null,
+      source: 'PH1603'
     }]);
     if (error) throw error;
     showToast('관심고객 등록이 완료되었습니다! 24시간 내 연락드립니다.', 'success');

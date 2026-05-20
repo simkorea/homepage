@@ -25,7 +25,7 @@ module.exports = async (req, res) => {
       phone,
       unit_type: unit_type || null,
       message: message || null,
-      project: 'PH1603 프라이빗 오뜨 갤러리'
+      source: 'PH1603'
     })
   });
 
@@ -53,6 +53,10 @@ module.exports = async (req, res) => {
               🏢 PH1603 새 관심고객이 등록되었습니다
             </h2>
             <table style="width:100%;border-collapse:collapse;">
+              <tr>
+                <td style="padding:10px 14px;background:#f9f6f2;font-weight:700;width:30%;border:1px solid #ddd;color:#3d2b1f;">사이트</td>
+                <td style="padding:10px 14px;border:1px solid #ddd;"><strong style="color:#7c5c3a;">PH1603 프라이빗 오뜨 갤러리</strong></td>
+              </tr>
               <tr>
                 <td style="padding:10px 14px;background:#f9f6f2;font-weight:700;width:30%;border:1px solid #ddd;color:#3d2b1f;">이름</td>
                 <td style="padding:10px 14px;border:1px solid #ddd;">${name}</td>
