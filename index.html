@@ -1400,39 +1400,152 @@ footer {
         </div>
       </div>
       <div class="fade-up d1">
-        <div class="form-wrap" id="consultation-form-wrap">
-          <h3 class="form-title">관심고객 등록</h3>
-          <p class="form-sub">아래 정보를 입력하시면 분양 우선 안내를 받으실 수 있습니다.</p>
-          <form id="consultation-form" onsubmit="submitConsultation(event)">
-            <div class="form-row">
-              <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label" for="f-name">성함 *</label>
-                <input class="form-input" id="f-name" type="text" placeholder="홍길동" required autocomplete="name">
+        <div class="form-wrap p-6 bg-white border border-[#e2ddd6] rounded-2xl shadow-sm" id="consultation-form-wrap">
+          <!-- Tab Bar -->
+          <div class="flex border-b border-[#e2ddd6] mb-6">
+            <button type="button" class="flex-1 pb-3 text-center text-[13px] md:text-[14px] font-bold border-b-2 transition-all duration-200 outline-none" id="tab-btn-reserve" onclick="switchFormTab('reserve')">갤러리 방문예약</button>
+            <button type="button" class="flex-1 pb-3 text-center text-[13px] md:text-[14px] font-bold border-b-2 transition-all duration-200 outline-none" id="tab-btn-consult" onclick="switchFormTab('consult')">관심고객 등록</button>
+          </div>
+
+          <!-- 1. Gallery Visit Reservation Tab -->
+          <div id="form-content-reserve" class="form-tab-content">
+            <h3 class="form-title text-[20px] font-extrabold mb-1 text-[#1a1714]">갤러리 방문예약</h3>
+            <p class="form-sub text-[13px] text-[#6b6460] mb-5">원하시는 날짜와 시간대를 선택하여 방문을 예약해 주세요.</p>
+            <div class="bg-[#faf9f7] border border-[#e9e4db] rounded-xl p-3.5 text-[12px] text-[#7c5c3a] mb-6 leading-relaxed">
+              <strong>안내사항</strong><br>
+              ※ 예약 변경은 기존 방문예약을 취소하신 후 새로 예약해 주시기 바랍니다. 동일 날짜/시간대는 갤러리 상황에 따라 조기 마감될 수 있습니다.
+            </div>
+
+            <form id="reserve-booking-form" onsubmit="submitReservation(event)">
+              <!-- Date/Time Picker Group -->
+              <div class="grid grid-cols-1 md:grid-cols-12 gap-5 mb-6">
+                <!-- Calendar (Left - 7 cols) -->
+                <div class="md:col-span-7 flex flex-col gap-2">
+                  <label class="form-label text-[13px] font-bold text-[#1a1714]">01 예약날짜 선택 *</label>
+                  <div class="border border-[#e2ddd6] rounded-xl p-4 bg-white select-none">
+                    <div class="flex justify-between items-center mb-3">
+                      <button type="button" class="p-1 hover:bg-[#f3f0ea] rounded transition-all text-[#7c5c3a] font-bold text-[15px]" onclick="changeMonth(-1)">&lt;</button>
+                      <span id="calendar-month-year" class="font-bold text-[#1a1714] text-[14px]">2026.06</span>
+                      <button type="button" class="p-1 hover:bg-[#f3f0ea] rounded transition-all text-[#7c5c3a] font-bold text-[15px]" onclick="changeMonth(1)">&gt;</button>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1 text-center text-[12px] font-bold text-[#6b6460] mb-2 border-b border-[#f3f0ea] pb-1">
+                      <div class="text-red-500">일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div class="text-blue-500">토</div>
+                    </div>
+                    <div id="calendar-days" class="grid grid-cols-7 gap-1 text-center text-[13px] font-medium">
+                      <!-- Rendered by JS -->
+                    </div>
+                    <div class="flex justify-between items-center mt-3 pt-2 border-t border-[#f3f0ea] text-[11px] text-[#6b6460]">
+                      <div class="flex gap-2">
+                        <span><span class="inline-block w-2.5 h-2.5 rounded-full bg-[#e2ddd6] mr-1"></span>선택불가</span>
+                        <span><span class="inline-block w-2.5 h-2.5 rounded-full bg-white border border-[#7c5c3a] mr-1"></span>예약가능</span>
+                      </div>
+                      <div>
+                        선택일: <span id="selected-date-display" class="font-bold text-[#7c5c3a]">선택 안 됨</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Time slots (Right - 5 cols) -->
+                <div class="md:col-span-5 flex flex-col gap-2">
+                  <label class="form-label text-[13px] font-bold text-[#1a1714]">02 예약시간 선택 *</label>
+                  <div class="border border-[#e2ddd6] rounded-xl p-4 bg-white flex flex-col gap-2 min-h-[220px] justify-center" id="time-slots-container">
+                    <p class="text-center text-[12px] text-[#6b6460]">달력에서 날짜를 먼저 선택해 주세요.</p>
+                  </div>
+                </div>
               </div>
-              <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label" for="f-phone">연락처 *</label>
-                <input class="form-input" id="f-phone" type="tel" placeholder="010-0000-0000" required autocomplete="tel">
+
+              <!-- Information Form -->
+              <h4 class="text-[13px] font-bold border-b border-[#e2ddd6] pb-1.5 mb-4 text-[#1a1714]">03 방문 정보 입력</h4>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div class="flex flex-col gap-1.5">
+                  <label class="form-label text-[12px] text-[#6b6460]" for="r-name">성함 *</label>
+                  <input class="form-input w-full p-3 border border-[#e2ddd6] rounded-lg text-[14px]" id="r-name" type="text" placeholder="성함 입력" required autocomplete="name">
+                </div>
+                <div class="flex flex-col gap-1.5">
+                  <label class="form-label text-[12px] text-[#6b6460]" for="r-phone">연락처 *</label>
+                  <input class="form-input w-full p-3 border border-[#e2ddd6] rounded-lg text-[14px]" id="r-phone" type="tel" placeholder="010-0000-0000" required autocomplete="tel">
+                </div>
               </div>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="f-unit">관심 타입</label>
-              <select class="form-select" id="f-unit">
-                <option value="">타입 선택 (선택)</option>
-                <option value="84A1">84A1 타입 (29세대, 1~5호 라인)</option>
-                <option value="84B1">84B1 타입 (5세대, 6호 코너)</option>
-                <option value="미정">미정</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="f-message">문의 내용</label>
-              <textarea class="form-textarea" id="f-message" placeholder="궁금하신 사항을 남겨주세요. (선택)"></textarea>
-            </div>
-            <button class="form-submit" id="submit-btn" type="submit">
-              <span class="btn-icon"><iconify-icon icon="solar:paper-plane-bold"></iconify-icon></span>
-              관심고객 등록하기
-            </button>
-            <p class="form-notice">* 수집된 개인정보는 분양 안내 목적으로만 사용되며, 관련 법령에 따라 안전하게 관리됩니다.</p>
-          </form>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div class="flex flex-col gap-1.5">
+                  <label class="form-label text-[12px] text-[#6b6460]">방문인원</label>
+                  <div class="flex gap-4 items-center h-[46px]">
+                    <label class="flex items-center gap-1.5 text-[14px] cursor-pointer"><input type="radio" name="r-visitor" value="1명" checked class="accent-[#7c5c3a]"> 1명</label>
+                    <label class="flex items-center gap-1.5 text-[14px] cursor-pointer"><input type="radio" name="r-visitor" value="2명" class="accent-[#7c5c3a]"> 2명</label>
+                    <label class="flex items-center gap-1.5 text-[14px] cursor-pointer"><input type="radio" name="r-visitor" value="3명 이상" class="accent-[#7c5c3a]"> 3명 이상</label>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                  <label class="form-label text-[12px] text-[#6b6460]">방문수단</label>
+                  <div class="flex gap-4 items-center h-[46px]">
+                    <label class="flex items-center gap-1.5 text-[14px] cursor-pointer"><input type="radio" name="r-transport" value="도보" checked class="accent-[#7c5c3a]"> 도보</label>
+                    <label class="flex items-center gap-1.5 text-[14px] cursor-pointer"><input type="radio" name="r-transport" value="차량" class="accent-[#7c5c3a]"> 차량</label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-1.5 mb-5">
+                <label class="form-label text-[12px] text-[#6b6460]" for="r-msg">추가 문의사항</label>
+                <textarea class="form-textarea w-full p-3 border border-[#e2ddd6] rounded-lg text-[14px] min-h-[70px] resize-none" id="r-msg" placeholder="문의하실 내용이 있다면 적어주세요. (선택)"></textarea>
+              </div>
+
+              <!-- Terms agreement -->
+              <div class="bg-[#faf9f7] border border-[#e9e4db] rounded-lg p-3 text-[12px] text-[#6b6460] mb-4 max-h-[80px] overflow-y-auto leading-relaxed">
+                <strong>개인정보 수집 및 이용 동의</strong><br>
+                1. 수집하는 개인정보 항목: 성함, 연락처<br>
+                2. 수집 및 이용 목적: 갤러리 방문 예약 및 상담 안내<br>
+                3. 보유 및 이용 기간: 분양 완료 시까지 (고객 요청 시 즉시 파기)
+              </div>
+              <label class="flex items-center gap-2 mb-6 text-[13px] text-[#1a1714] cursor-pointer select-none font-medium">
+                <input type="checkbox" id="r-agree" required class="w-4 h-4 rounded border-[#e2ddd6] accent-[#7c5c3a]">
+                개인정보 수집 및 이용에 동의합니다. *
+              </label>
+
+              <button class="form-submit w-full py-4 bg-[#7c5c3a] text-white font-bold rounded-xl hover:bg-[#a8845a] transition-all duration-200" id="reserve-submit-btn" type="submit">방문예약 신청하기</button>
+            </form>
+          </div>
+
+
+
+          <!-- 3. Register Interest Tab (Original Form) -->
+          <div id="form-content-consult" class="form-tab-content hidden">
+            <h3 class="form-title text-[20px] font-extrabold mb-1 text-[#1a1714]">관심고객 등록</h3>
+            <p class="form-sub text-[13px] text-[#6b6460] mb-6">아래 정보를 입력하시면 분양 우선 안내를 받으실 수 있습니다.</p>
+            
+            <form id="consultation-form" onsubmit="submitConsultation(event)">
+              <div class="form-row">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label" for="f-name">성함 *</label>
+                  <input class="form-input" id="f-name" type="text" placeholder="홍길동" required autocomplete="name">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label" for="f-phone">연락처 *</label>
+                  <input class="form-input" id="f-phone" type="tel" placeholder="010-0000-0000" required autocomplete="tel">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="f-unit">관심 타입</label>
+                <select class="form-select" id="f-unit">
+                  <option value="">타입 선택 (선택)</option>
+                  <option value="84A1">84A1 타입 (29세대, 1~5호 라인)</option>
+                  <option value="84B1">84B1 타입 (5세대, 6호 코너)</option>
+                  <option value="미정">미정</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="f-message">문의 내용</label>
+                <textarea class="form-textarea" id="f-message" placeholder="궁금하신 사항을 남겨주세요. (선택)"></textarea>
+              </div>
+              <button class="form-submit w-full py-4 bg-[#7c5c3a] text-white font-bold rounded-xl hover:bg-[#a8845a] transition-all duration-200" id="submit-btn" type="submit">
+                <span class="btn-icon"><iconify-icon icon="solar:paper-plane-bold"></iconify-icon></span>
+                관심고객 등록하기
+              </button>
+              <p class="form-notice mt-4 text-[12px] text-[#6b6460]">* 수집된 개인정보는 분양 안내 목적으로만 사용되며, 관련 법령에 따라 안전하게 관리됩니다.</p>
+            </form>
+          </div>
         </div>
       </div>
     </div>
@@ -1511,6 +1624,280 @@ function showToast(msg, type) {
   clearTimeout(t._timer);
   t._timer = setTimeout(() => { t.className = ''; }, 4500);
 }
+
+/* ── 방문예약 탭 제어 및 달력 로직 ── */
+let currentCalDate = new Date();
+let calYear = currentCalDate.getFullYear();
+let calMonth = currentCalDate.getMonth(); // 0-indexed (June = 5)
+let selectedBookingDate = null;
+let selectedBookingTime = null;
+let bookedSlots = {}; // {"YYYY-MM-DD": ["10:00", ...]}
+
+// 초기화: 탭 세팅 및 첫 달력 로드
+document.addEventListener('DOMContentLoaded', () => {
+  switchFormTab('reserve');
+  loadBookings().then(() => {
+    renderCalendar();
+  });
+});
+
+function switchFormTab(tab) {
+  // 모든 탭 버튼 비활성화
+  document.querySelectorAll('#consultation-form-wrap button[id^="tab-btn-"]').forEach(btn => {
+    btn.classList.remove('text-[#7c5c3a]', 'border-[#7c5c3a]');
+    btn.classList.add('text-[#6b6460]', 'border-transparent');
+  });
+  // 선택한 탭 버튼 활성화
+  const activeBtn = document.getElementById('tab-btn-' + tab);
+  if (activeBtn) {
+    activeBtn.classList.remove('text-[#6b6460]', 'border-transparent');
+    activeBtn.classList.add('text-[#7c5c3a]', 'border-[#7c5c3a]');
+  }
+
+  // 모든 탭 콘텐츠 숨기기
+  document.querySelectorAll('.form-tab-content').forEach(content => {
+    content.classList.add('hidden');
+  });
+  // 선택한 탭 콘텐츠 보이기
+  const activeContent = document.getElementById('form-content-' + tab);
+  if (activeContent) {
+    activeContent.classList.remove('hidden');
+  }
+}
+
+// Supabase로부터 예약 완료 슬롯 조회
+async function loadBookings() {
+  try {
+    const { data, error } = await _sb
+      .from('consultations')
+      .select('message')
+      .eq('source', '더코리츠힐남산_예약');
+    
+    if (error) throw error;
+
+    bookedSlots = {};
+    if (data) {
+      data.forEach(row => {
+        // [방문예약] YYYY-MM-DD HH:MM 형태 파싱
+        const match = row.message.match(/\[방문예약\]\s*(\d{4}-\d{2}-\d{2})\s*(\d{2}:\d{2})/);
+        if (match) {
+          const date = match[1];
+          const time = match[2];
+          if (!bookedSlots[date]) bookedSlots[date] = [];
+          bookedSlots[date].push(time);
+        }
+      });
+    }
+  } catch (err) {
+    console.error('예약 데이터를 가져오는 중 오류가 발생했습니다:', err);
+  }
+}
+
+// 달력 렌더링
+function renderCalendar() {
+  const calMonthYear = document.getElementById('calendar-month-year');
+  const calDays = document.getElementById('calendar-days');
+  if (!calMonthYear || !calDays) return;
+
+  calMonthYear.textContent = `${calYear}. ${String(calMonth + 1).padStart(2, '0')}`;
+  calDays.innerHTML = '';
+
+  const firstDayIndex = new Date(calYear, calMonth, 1).getDay();
+  const lastDate = new Date(calYear, calMonth + 1, 0).getDate();
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  // 이전 달 공백 채우기
+  for (let i = 0; i < firstDayIndex; i++) {
+    const emptyDiv = document.createElement('div');
+    calDays.appendChild(emptyDiv);
+  }
+
+  // 날짜 그리기
+  for (let d = 1; d <= lastDate; d++) {
+    const dateBtn = document.createElement('button');
+    dateBtn.type = 'button';
+    dateBtn.textContent = d;
+    
+    const cellDate = new Date(calYear, calMonth, d);
+    const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const dayOfWeek = cellDate.getDay();
+
+    // 기본 스타일
+    dateBtn.className = 'w-9 h-9 mx-auto rounded-full flex items-center justify-center transition-all text-[13px] font-bold outline-none';
+
+    // 토/일 글자 색상
+    if (dayOfWeek === 0) dateBtn.classList.add('text-red-500');
+    else if (dayOfWeek === 6) dateBtn.classList.add('text-blue-500');
+    else dateBtn.classList.add('text-[#1a1714]');
+
+    // 과거 날짜 및 당일 마감 비활성화
+    const isPast = cellDate < today;
+    // 하루 마감 여부 (시간 슬롯 7개 전부 마감인 경우)
+    const isFullyBooked = bookedSlots[dateStr] && bookedSlots[dateStr].length >= 7;
+
+    if (isPast || isFullyBooked) {
+      dateBtn.disabled = true;
+      dateBtn.classList.add('bg-transparent', 'text-gray-300', 'cursor-not-allowed');
+      if (isPast) {
+        if (dayOfWeek === 0) dateBtn.classList.remove('text-red-500');
+        if (dayOfWeek === 6) dateBtn.classList.remove('text-blue-500');
+        dateBtn.classList.add('text-gray-200');
+      }
+    } else {
+      dateBtn.classList.add('hover:bg-[#f3f0ea]', 'cursor-pointer');
+      
+      // 선택된 날짜 하이라이트
+      if (selectedBookingDate === dateStr) {
+        dateBtn.classList.remove('hover:bg-[#f3f0ea]', 'text-red-500', 'text-blue-500', 'text-[#1a1714]');
+        dateBtn.classList.add('bg-[#7c5c3a]', 'text-white');
+      }
+
+      dateBtn.onclick = () => selectBookingDate(dateStr);
+    }
+
+    calDays.appendChild(dateBtn);
+  }
+}
+
+function changeMonth(direction) {
+  calMonth += direction;
+  if (calMonth < 0) {
+    calMonth = 11;
+    calYear -= 1;
+  } else if (calMonth > 11) {
+    calMonth = 0;
+    calYear += 1;
+  }
+  renderCalendar();
+}
+
+function selectBookingDate(dateStr) {
+  selectedBookingDate = dateStr;
+  selectedBookingTime = null;
+  
+  // 날짜 표시 업데이트
+  const display = document.getElementById('selected-date-display');
+  if (display) {
+    display.textContent = dateStr;
+  }
+
+  // 달력 리렌더링
+  renderCalendar();
+
+  // 시간 슬롯 렌더링
+  renderTimeSlots(dateStr);
+}
+
+// 시간 슬롯 렌더링
+function renderTimeSlots(dateStr) {
+  const container = document.getElementById('time-slots-container');
+  if (!container) return;
+
+  const slots = ['10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
+  const booked = bookedSlots[dateStr] || [];
+
+  container.innerHTML = `
+    <p class="text-[12px] text-[#7c5c3a] font-bold mb-1.5">${dateStr} 예약 가능 시간</p>
+    <div class="grid grid-cols-2 gap-2 w-full">
+  `;
+
+  const gridDiv = document.createElement('div');
+  gridDiv.className = 'grid grid-cols-1 sm:grid-cols-2 gap-2 w-full';
+
+  slots.forEach(slot => {
+    const isBooked = booked.includes(slot);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'py-3 text-[13px] font-bold rounded-lg border text-center transition-all duration-200 outline-none w-full flex justify-between px-3 items-center';
+
+    if (isBooked) {
+      btn.className += ' border-[#e2ddd6] bg-gray-50 text-gray-400 cursor-not-allowed';
+      btn.disabled = true;
+      btn.innerHTML = `<span>${slot}</span> <span class="text-[11px] font-medium text-red-400">마감</span>`;
+    } else {
+      if (selectedBookingTime === slot) {
+        btn.className += ' border-[#7c5c3a] bg-[#7c5c3a] text-white';
+      } else {
+        btn.className += ' border-[#e2ddd6] bg-white text-[#1a1714] hover:border-[#7c5c3a] hover:bg-[#faf9f7]';
+      }
+      btn.innerHTML = `<span>${slot}</span> <span class="text-[11px] font-medium text-[#7c5c3a]">가능</span>`;
+      btn.onclick = () => {
+        selectedBookingTime = slot;
+        renderTimeSlots(dateStr);
+      };
+    }
+    gridDiv.appendChild(btn);
+  });
+
+  container.appendChild(gridDiv);
+}
+
+// 예약 등록 제출
+async function submitReservation(e) {
+  e.preventDefault();
+
+  if (!selectedBookingDate || !selectedBookingTime) {
+    showToast('방문 날짜와 시간을 선택해 주세요.', 'error');
+    return;
+  }
+
+  const name = document.getElementById('r-name').value.trim();
+  const phone = document.getElementById('r-phone').value.trim();
+  const visitor = document.querySelector('input[name="r-visitor"]:checked').value;
+  const transport = document.querySelector('input[name="r-transport"]:checked').value;
+  const msg = document.getElementById('r-msg').value.trim();
+  const agree = document.getElementById('r-agree').checked;
+
+  if (!name || !phone) {
+    showToast('성함과 연락처는 필수 입력 사항입니다.', 'error');
+    return;
+  }
+
+  if (!agree) {
+    showToast('개인정보 동의에 체크해 주세요.', 'error');
+    return;
+  }
+
+  const submitBtn = document.getElementById('reserve-submit-btn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = '예약 신청 중...';
+
+  // [방문예약] YYYY-MM-DD HH:MM (인원 / 수단) | 문의: 내용
+  const formattedMessage = `[방문예약] ${selectedBookingDate} ${selectedBookingTime} (${visitor} / ${transport}방문) ${msg ? '| 문의사항: ' + msg : ''}`;
+
+  try {
+    const { error } = await _sb.from('consultations').insert({
+      name: name,
+      phone: phone,
+      message: formattedMessage,
+      source: '더코리츠힐남산_예약'
+    });
+
+    if (error) throw error;
+
+    showToast('갤러리 방문 예약이 성공적으로 신청되었습니다.', 'success');
+    document.getElementById('reserve-booking-form').reset();
+    selectedBookingDate = null;
+    selectedBookingTime = null;
+    
+    // 달력 표시 초기화
+    document.getElementById('selected-date-display').textContent = '선택 안 됨';
+    document.getElementById('time-slots-container').innerHTML = '<p class="text-center text-[12px] text-[#6b6460]">달력에서 날짜를 먼저 선택해 주세요.</p>';
+
+    // 예약 현황 다시 불러오기
+    await loadBookings();
+    renderCalendar();
+  } catch (err) {
+    console.error('Reservation submit error:', err);
+    showToast('예약 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.', 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = '방문예약 신청하기';
+  }
+}
+
+
 
 async function submitConsultation(e) {
   e.preventDefault();
