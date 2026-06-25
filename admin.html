@@ -499,6 +499,64 @@
       justify-content: flex-end;
     }
   }
+
+  /* ── 1단계 추가: 툴바 / 검색 / CSV / 방문뱃지 / 현장뱃지 ── */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .toolbar-right { display: flex; align-items: center; gap: 8px; }
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--glass2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    min-width: 220px;
+    transition: border-color 0.2s;
+  }
+  .search-box:focus-within { border-color: var(--gold); }
+  .search-box iconify-icon { color: var(--text-dim); font-size: 16px; flex-shrink: 0; }
+  .search-input {
+    background: none; border: none; outline: none;
+    color: var(--text); font-family: inherit; font-size: 14px; width: 100%;
+  }
+  .search-input::placeholder { color: var(--text-dim); }
+  .csv-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--gold-dim);
+    border: 1px solid rgba(201,165,90,0.35);
+    border-radius: 10px;
+    padding: 8px 14px;
+    color: var(--gold);
+    font-size: 13px; font-weight: 600; font-family: inherit;
+    cursor: pointer; white-space: nowrap; transition: all 0.2s;
+  }
+  .csv-btn:hover { background: rgba(201,165,90,0.22); }
+  .badge-visit {
+    background: var(--gold-dim);
+    color: var(--gold);
+    border: 1px solid rgba(201,165,90,0.3);
+  }
+  .badge-thekoritz {
+    background: var(--gold-dim); color: var(--gold);
+    border: 1px solid rgba(201,165,90,0.25);
+  }
+  .badge-parkroche {
+    background: var(--glass2); color: var(--text);
+    border: 1px solid var(--border);
+  }
+  @media (max-width: 768px) {
+    .toolbar { flex-direction: column; align-items: stretch; }
+    .toolbar-right { flex-direction: row; }
+    .search-box { flex: 1; min-width: 0; }
+  }
 </style>
 </head>
 <body>
@@ -570,10 +628,26 @@
       </button>
     </div>
 
-    <div class="filter-bar">
-      <button class="filter-btn active" id="filter-all" onclick="setFilter('all')">전체</button>
-      <button class="filter-btn" id="filter-pending" onclick="setFilter('pending')">대기 중</button>
-      <button class="filter-btn" id="filter-done" onclick="setFilter('done')">처리 완료</button>
+    <!-- 현장별 필터 (source 자동 생성) -->
+    <div class="filter-bar" id="source-filter" style="flex-wrap:wrap;"></div>
+
+    <!-- 상태 필터 + 검색 + CSV -->
+    <div class="toolbar">
+      <div class="filter-bar" style="margin-bottom:0;flex-wrap:wrap;">
+        <button class="filter-btn active" id="filter-all" onclick="setFilter('all')">전체</button>
+        <button class="filter-btn" id="filter-pending" onclick="setFilter('pending')">대기 중</button>
+        <button class="filter-btn" id="filter-done" onclick="setFilter('done')">처리 완료</button>
+      </div>
+      <div class="toolbar-right">
+        <label class="search-box">
+          <iconify-icon icon="solar:magnifer-linear"></iconify-icon>
+          <input id="search-input" class="search-input" type="text" placeholder="이름·연락처 검색"
+                 oninput="onSearch(this.value)" autocomplete="off">
+        </label>
+        <button class="csv-btn" onclick="exportCSV()">
+          <iconify-icon icon="solar:download-minimalistic-bold"></iconify-icon> CSV
+        </button>
+      </div>
     </div>
 
     <div class="table-wrap">
@@ -585,13 +659,14 @@
             <th>이메일</th>
             <th>사이트</th>
             <th>타입</th>
+            <th>희망방문</th>
             <th>상태</th>
             <th>접수일시</th>
             <th>작업</th>
           </tr>
         </thead>
         <tbody id="table-body">
-          <tr class="loading-row"><td colspan="8">불러오는 중...</td></tr>
+          <tr class="loading-row"><td colspan="9">불러오는 중...</td></tr>
         </tbody>
       </table>
     </div>
@@ -672,7 +747,9 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 
 const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 let allData = [];
-let currentFilter = 'all';
+let currentFilter = 'all';     // 상태 필터: all | pending | done
+let currentSource = 'all';     // 현장 필터: all | <source값>
+let currentSearch = '';        // 이름·연락처 검색어
 
 // ══════════════════════════════════════════
 // AUTH
@@ -713,7 +790,7 @@ function checkSession() {
 // ══════════════════════════════════════════
 async function loadData() {
   const tbody = document.getElementById('table-body');
-  tbody.innerHTML = '<tr class="loading-row"><td colspan="8">불러오는 중...</td></tr>';
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="9">불러오는 중...</td></tr>';
 
   const { data, error } = await _sb
     .from('consultations')
@@ -721,21 +798,83 @@ async function loadData() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="8">오류: ${error.message}<br><small style="color:var(--text-dim);margin-top:8px;display:block;">Supabase RLS 정책을 확인해주세요 (아래 안내 참고)</small></td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="9">오류: ${error.message}<br><small style="color:var(--text-dim);margin-top:8px;display:block;">Supabase RLS 정책을 확인해주세요 (아래 안내 참고)</small></td></tr>`;
     return;
   }
 
   allData = data || [];
+  buildSourceFilter();
+  updateStats();
+  renderTable();
+}
+
+// ── 방문예약 파싱: "[희망방문: YYYY-MM-DD HH:MM] 내용" ──
+function parseVisit(message) {
+  if (!message) return { visit: null, body: '' };
+  const m = String(message).match(/\[\s*희망방문\s*:\s*([^\]]+)\]/);
+  if (!m) return { visit: null, body: String(message).trim() };
+  return { visit: m[1].trim(), body: String(message).replace(m[0], '').trim() };
+}
+
+function fmtDateTime(iso) {
+  const dt = new Date(iso);
+  return `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+}
+function typeOf(t) { return ({ '84': '84㎡', '59': '59㎡' })[t] || t || '—'; }
+function jsStr(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+
+// ── 필터 파이프라인 ──
+function getScoped() {            // 현장 + 검색 (통계카드 기준)
+  let rows = allData;
+  if (currentSource !== 'all') rows = rows.filter(r => (r.source || '') === currentSource);
+  const q = currentSearch.trim().toLowerCase();
+  if (q) rows = rows.filter(r =>
+    (r.name || '').toLowerCase().includes(q) || (r.phone || '').toLowerCase().includes(q));
+  return rows;
+}
+function getVisible() {           // 현장 + 검색 + 상태 (목록/CSV 기준)
+  let rows = getScoped();
+  if (currentFilter !== 'all')
+    rows = rows.filter(r => (r.status === 'done' ? 'done' : 'pending') === currentFilter);
+  return rows;
+}
+
+// ── 현장별 필터 버튼 자동 생성 (source 기준) ──
+function buildSourceFilter() {
+  const known = ['파크로쉬서울원', '더코리츠힐남산'];
+  const present = [...new Set(allData.map(r => r.source).filter(Boolean))];
+  if (currentSource !== 'all' && !present.includes(currentSource)) currentSource = 'all';
+  const ordered = [
+    ...known.filter(s => present.includes(s)),
+    ...present.filter(s => !known.includes(s)).sort((a, b) => a.localeCompare(b, 'ko'))
+  ];
+  const btn = (val, label, count) =>
+    `<button class="filter-btn ${currentSource === val ? 'active' : ''}" onclick="setSource('${jsStr(val)}')">${label}${count != null ? ` <span style="opacity:.55;font-weight:400">${count}</span>` : ''}</button>`;
+  document.getElementById('source-filter').innerHTML =
+    btn('all', '전체', allData.length) +
+    ordered.map(s => btn(s, esc(s), allData.filter(r => r.source === s).length)).join('');
+}
+
+function setSource(s) {
+  currentSource = s;
+  buildSourceFilter();
+  updateStats();
+  renderTable();
+}
+
+function onSearch(v) {
+  currentSearch = v;
   updateStats();
   renderTable();
 }
 
 function updateStats() {
+  const scope = getScoped();   // 현장 필터·검색이 통계에도 반영됨
   const today = new Date().toDateString();
-  document.getElementById('stat-total').textContent   = allData.length;
-  document.getElementById('stat-pending').textContent = allData.filter(r => r.status === 'pending').length;
-  document.getElementById('stat-done').textContent    = allData.filter(r => r.status === 'done').length;
-  document.getElementById('stat-today').textContent   = allData.filter(r => new Date(r.created_at).toDateString() === today).length;
+  document.getElementById('stat-total').textContent   = scope.length;
+  document.getElementById('stat-pending').textContent = scope.filter(r => r.status !== 'done').length;
+  document.getElementById('stat-done').textContent    = scope.filter(r => r.status === 'done').length;
+  document.getElementById('stat-today').textContent   = scope.filter(r => new Date(r.created_at).toDateString() === today).length;
 }
 
 function setFilter(f) {
@@ -747,34 +886,35 @@ function setFilter(f) {
 }
 
 function renderTable() {
-  const rows = currentFilter === 'all' ? allData
-    : allData.filter(r => r.status === (currentFilter === 'done' ? 'done' : 'pending'));
-
+  const rows = getVisible();
   const tbody = document.getElementById('table-body');
   if (!rows.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="8">신청 내역이 없습니다.</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">조건에 맞는 신청 내역이 없습니다.</td></tr>';
     return;
   }
 
   tbody.innerHTML = rows.map(r => {
-    const isPending = r.status === 'pending' || !r.status;
+    const isPending = r.status !== 'done';
     const badge = isPending
       ? '<span class="badge badge-pending">대기 중</span>'
       : '<span class="badge badge-done">완료</span>';
-    const dt = new Date(r.created_at);
-    const dateStr = `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
-    const typeLabel = { '84': '84㎡', '59': '59㎡' }[r.unit_type] || r.unit_type || '—';
+    const { visit } = parseVisit(r.message);
+    const visitCell = visit
+      ? `<span class="badge badge-visit"><iconify-icon icon="solar:calendar-bold" style="font-size:12px"></iconify-icon> ${esc(visit)}</span>`
+      : '<span style="color:var(--text-dim)">—</span>';
+    const dateStr = fmtDateTime(r.created_at);
+    const typeLabel = typeOf(r.unit_type);
     const actionBtn = isPending
       ? `<button class="action-btn complete" onclick="changeStatus('${r.id}','done')">완료 처리</button>`
       : `<button class="action-btn revert" onclick="changeStatus('${r.id}','pending')">대기로 변경</button>`;
-    const sourceBadge = sourceBadgeHtml(r.source);
 
     return `<tr>
       <td data-label="이름"><strong>${esc(r.name)}</strong></td>
       <td data-label="연락처">${esc(r.phone)}</td>
       <td data-label="이메일" style="color:var(--text-dim)">${esc(r.email||'—')}</td>
-      <td data-label="사이트">${sourceBadge}</td>
+      <td data-label="사이트">${sourceBadgeHtml(r.source)}</td>
       <td data-label="타입">${typeLabel}</td>
+      <td data-label="희망방문">${visitCell}</td>
       <td data-label="상태">${badge}</td>
       <td data-label="접수일시" style="color:var(--text-dim);font-size:12px">${dateStr}</td>
       <td data-label="작업">
@@ -786,6 +926,34 @@ function renderTable() {
       </td>
     </tr>`;
   }).join('');
+}
+
+// ── CSV 내보내기 (현재 필터된 목록 그대로) ──
+function csvCell(v) {
+  const s = (v == null ? '' : String(v));
+  return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function exportCSV() {
+  const rows = getVisible();
+  if (!rows.length) { alert('내보낼 내역이 없습니다.'); return; }
+  const header = ['접수일시','현장','타입','이름','연락처','이메일','희망방문','상태','문의내용'];
+  const lines = [header.map(csvCell).join(',')];
+  rows.forEach(r => {
+    const { visit, body } = parseVisit(r.message);
+    lines.push([
+      fmtDateTime(r.created_at), r.source || '', typeOf(r.unit_type),
+      r.name || '', r.phone || '', r.email || '',
+      visit || '', (r.status === 'done' ? '완료' : '대기'), body
+    ].map(csvCell).join(','));
+  });
+  const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const d = new Date();
+  const tag = currentSource === 'all' ? '전체' : currentSource;
+  const fn = `상담신청_${tag}_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.csv`;
+  const a = document.createElement('a');
+  a.href = url; a.download = fn; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // ══════════════════════════════════════════
@@ -814,10 +982,13 @@ async function deleteRow(id) {
 function openDetail(id) {
   const r = allData.find(d => d.id === id);
   if (!r) return;
-  const dt = new Date(r.created_at);
-  const dateStr = `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
-  const typeLabel = { '84': '84㎡', '59': '59㎡' }[r.unit_type] || r.unit_type || '—';
+  const { visit, body } = parseVisit(r.message);
+  const dateStr = fmtDateTime(r.created_at);
+  const typeLabel = typeOf(r.unit_type);
   const statusLabel = (r.status === 'done') ? '처리 완료' : '대기 중';
+  const visitRow = visit
+    ? `<div class="detail-row"><div class="detail-label">희망 방문일시</div><div class="detail-value" style="color:var(--gold);font-weight:600">${esc(visit)}</div></div>`
+    : '';
 
   document.getElementById('modal-content').innerHTML = `
     <div class="detail-row"><div class="detail-label">사이트</div><div class="detail-value">${sourceBadgeHtml(r.source)}</div></div>
@@ -825,7 +996,8 @@ function openDetail(id) {
     <div class="detail-row"><div class="detail-label">연락처</div><div class="detail-value">${esc(r.phone)}</div></div>
     <div class="detail-row"><div class="detail-label">이메일</div><div class="detail-value">${esc(r.email||'—')}</div></div>
     <div class="detail-row"><div class="detail-label">관심 타입</div><div class="detail-value">${typeLabel}</div></div>
-    <div class="detail-row"><div class="detail-label">문의 내용</div><div class="detail-value">${esc(r.message||'—')}</div></div>
+    ${visitRow}
+    <div class="detail-row"><div class="detail-label">문의 내용</div><div class="detail-value">${esc(body||'—')}</div></div>
     <div class="detail-row"><div class="detail-label">상태</div><div class="detail-value">${statusLabel}</div></div>
     <div class="detail-row"><div class="detail-label">접수일시</div><div class="detail-value">${dateStr}</div></div>
   `;
@@ -843,6 +1015,8 @@ function sourceBadgeHtml(source) {
   if (!source) return '<span class="badge badge-unknown">미확인</span>';
   if (source === 'PH1603') return '<span class="badge badge-ph1603">PH1603</span>';
   if (source === '신갈펜타원') return '<span class="badge badge-penta">신갈펜타원</span>';
+  if (source === '더코리츠힐남산') return '<span class="badge badge-thekoritz">더코리츠힐남산</span>';
+  if (source === '파크로쉬서울원') return '<span class="badge badge-parkroche">파크로쉬서울원</span>';
   return `<span class="badge badge-unknown">${esc(source)}</span>`;
 }
 
