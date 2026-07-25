@@ -1668,24 +1668,17 @@ function switchFormTab(tab) {
 // Supabase로부터 예약 완료 슬롯 조회
 async function loadBookings() {
   try {
+    // 예약된 날짜·시간만 반환하는 함수 (개인정보는 조회되지 않음)
     const { data, error } = await _sb
-      .from('consultations')
-      .select('message')
-      .eq('source', '더코리츠힐남산_예약');
-    
+      .rpc('get_booked_slots', { p_source: '더코리츠힐남산_예약' });
+
     if (error) throw error;
 
     bookedSlots = {};
     if (data) {
       data.forEach(row => {
-        // [방문예약] YYYY-MM-DD HH:MM 형태 파싱
-        const match = row.message.match(/\[방문예약\]\s*(\d{4}-\d{2}-\d{2})\s*(\d{2}:\d{2})/);
-        if (match) {
-          const date = match[1];
-          const time = match[2];
-          if (!bookedSlots[date]) bookedSlots[date] = [];
-          bookedSlots[date].push(time);
-        }
+        if (!bookedSlots[row.booked_date]) bookedSlots[row.booked_date] = [];
+        bookedSlots[row.booked_date].push(row.booked_time);
       });
     }
   } catch (err) {
@@ -1932,41 +1925,11 @@ async function submitConsultation(e) {
   }
 }
 
-// 네이버 광고 부정클릭 추적 (기존 신갈펜타원 사이트의 ad_clicks 테이블 재사용)
-(async function trackAdClick() {
-  const params = new URLSearchParams(window.location.search);
-  const NAVER_PARAMS = ['NaPm', 'nvadId', 'n_keyword', 'na_keyword', 'nclicks', 'n_media'];
-  const foundParam = NAVER_PARAMS.find(p => params.has(p));
-  if (!foundParam) return;
-
-  const LOG_KEY = 'koritzhill_ad_log';
-  const now = Date.now();
-  const TEN_MIN = 10 * 60 * 1000;
-
-  let log = [];
-  try { log = JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch(e) {}
-  const recentVisits = log.filter(t => now - t < TEN_MIN);
-  const isSuspicious = recentVisits.length >= 2;
-
-  log.push(now);
-  if (log.length > 50) log = log.slice(-50);
-  localStorage.setItem(LOG_KEY, JSON.stringify(log));
-
-  try {
-    const ipRes = await fetch('https://api.ipify.org?format=json');
-    const { ip } = await ipRes.json();
-    await _sb.from('ad_clicks').insert({
-      ip_address: ip,
-      param: `koritzhill|${foundParam}=${params.get(foundParam)}`,
-      user_agent: navigator.userAgent.substring(0, 500),
-      is_suspicious: isSuspicious
-    });
-  } catch(e) {
-    console.warn('[AdTrack] 기록 실패:', e);
-  }
-})();
-
 initFadeUp();
 </script>
+
+<!-- 광고 부정클릭 추적 (adguard.js) -->
+<script>window.ADGUARD_SITE = '더코리츠힐남산';</script>
+<script src="./adguard.js" defer></script>
 </body>
 </html>

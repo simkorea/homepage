@@ -566,10 +566,12 @@
   <div class="login-card">
     <div class="login-logo">SUPANOVA</div>
     <div class="login-title">관리자 로그인</div>
-    <input type="password" id="pw-input" class="login-input" placeholder="비밀번호 입력"
+    <input type="email" id="email-input" class="login-input" placeholder="이메일" autocomplete="username"
+           onkeydown="if(event.key==='Enter') document.getElementById('pw-input').focus()">
+    <input type="password" id="pw-input" class="login-input" placeholder="비밀번호 입력" autocomplete="current-password"
            onkeydown="if(event.key==='Enter') doLogin()">
-    <button class="login-btn" onclick="doLogin()">로그인</button>
-    <div class="login-error" id="login-error">비밀번호가 올바르지 않습니다.</div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">로그인</button>
+    <div class="login-error" id="login-error">이메일 또는 비밀번호가 올바르지 않습니다.</div>
   </div>
 </div>
 
@@ -678,24 +680,46 @@
 
       <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);">
         <div class="stat-card">
-          <div class="stat-label">24시간 총 광고 클릭</div>
+          <div class="stat-label">기간 내 광고 클릭</div>
           <div class="stat-value gold" id="fraud-stat-total">—</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">의심 IP 수 (3회 이상)</div>
+          <div class="stat-label">차단 권장 IP (70점 이상)</div>
           <div class="stat-value" style="color:var(--red)" id="fraud-stat-ips">—</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">is_suspicious 플래그</div>
+          <div class="stat-label">관찰 대상 IP</div>
           <div class="stat-value" id="fraud-stat-flagged">—</div>
         </div>
       </div>
 
-      <div class="section-header">
-        <div class="section-title">의심 IP 목록 <span style="font-size:12px;color:var(--text-dim);font-weight:400;">(최근 24시간 내 3회 이상 클릭)</span></div>
-        <button class="refresh-btn" onclick="loadFraudData()">
-          <iconify-icon icon="solar:refresh-bold"></iconify-icon> 새로고침
-        </button>
+      <div class="section-header" style="flex-wrap:wrap;gap:8px;">
+        <div class="section-title">의심 IP 목록</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <select id="fraud-days" onchange="loadFraudData()"
+                  style="background:var(--glass2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;">
+            <option value="1">최근 1일</option>
+            <option value="7" selected>최근 7일</option>
+            <option value="30">최근 30일</option>
+            <option value="90">최근 90일</option>
+          </select>
+          <button class="refresh-btn" onclick="copyBlockList()">
+            <iconify-icon icon="solar:copy-bold"></iconify-icon> 차단목록 복사
+          </button>
+          <button class="refresh-btn" onclick="downloadFraudCsv()">
+            <iconify-icon icon="solar:download-bold"></iconify-icon> 환급신고용 CSV
+          </button>
+          <button class="refresh-btn" onclick="loadFraudData()">
+            <iconify-icon icon="solar:refresh-bold"></iconify-icon> 새로고침
+          </button>
+        </div>
+      </div>
+
+      <div style="background:var(--glass2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.7;color:var(--text-dim);">
+        점수가 높을수록 부정클릭 가능성이 큽니다.
+        <strong style="color:var(--text);">차단목록 복사</strong>로 70점 이상 IP를 복사한 뒤
+        네이버 검색광고 → <strong style="color:var(--text);">도구 → 광고노출제한 관리</strong>에 붙여넣으면 다음 클릭부터 광고가 노출되지 않습니다.<br>
+        이미 지출된 광고비는 <strong style="color:var(--text);">환급신고용 CSV</strong>를 근거자료로 네이버 클린센터에 무효클릭 신고하면 환급받을 수 있습니다.
       </div>
 
       <div class="table-wrap">
@@ -703,9 +727,12 @@
           <thead>
             <tr>
               <th>IP 주소</th>
-              <th>클릭 횟수</th>
-              <th>최근 클릭 시간</th>
-              <th>파라미터</th>
+              <th>점수</th>
+              <th>클릭</th>
+              <th>판정 사유</th>
+              <th>평균 체류</th>
+              <th>현장</th>
+              <th>최근 클릭</th>
               <th>작업</th>
             </tr>
           </thead>
@@ -740,8 +767,6 @@
 // ══════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════
-const ADMIN_PW    = 'supanova2024!';   // ← 비밀번호 변경 가능
-const SESSION_KEY = 'sn_admin_v1';
 const SUPABASE_URL  = 'https://tctilpuhknxucrlnhlky.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRjdGlscHVoa254dWNybG5obGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMzE3NjQsImV4cCI6MjA5MTcwNzc2NH0._mS10zf3ayR7nbdFxQJHfZS57_tzOakGm-WkyQB8bxU';
 
@@ -754,35 +779,49 @@ let currentSearch = '';        // 이름·연락처 검색어
 // ══════════════════════════════════════════
 // AUTH
 // ══════════════════════════════════════════
-function doLogin() {
-  const val = document.getElementById('pw-input').value;
-  if (val === ADMIN_PW) {
-    sessionStorage.setItem(SESSION_KEY, '1');
-    document.getElementById('login-gate').style.display = 'none';
-    document.getElementById('admin-panel').style.display = 'block';
-    loadData();
-    startClock();
-    switchTab('consult');
-  } else {
-    document.getElementById('login-error').style.display = 'block';
-    document.getElementById('pw-input').value = '';
-    document.getElementById('pw-input').focus();
-    setTimeout(() => document.getElementById('login-error').style.display = 'none', 3000);
-  }
+function enterAdmin() {
+  document.getElementById('login-gate').style.display = 'none';
+  document.getElementById('admin-panel').style.display = 'block';
+  loadData();
+  startClock();
 }
 
-function doLogout() {
-  sessionStorage.removeItem(SESSION_KEY);
+function showLoginError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+  document.getElementById('pw-input').value = '';
+  document.getElementById('pw-input').focus();
+  setTimeout(() => el.style.display = 'none', 4000);
+}
+
+async function doLogin() {
+  const email = document.getElementById('email-input').value.trim();
+  const password = document.getElementById('pw-input').value;
+  if (!email || !password) { showLoginError('이메일과 비밀번호를 입력해 주세요.'); return; }
+
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true;
+  btn.textContent = '로그인 중...';
+
+  const { error } = await _sb.auth.signInWithPassword({ email, password });
+
+  btn.disabled = false;
+  btn.textContent = '로그인';
+
+  if (error) { showLoginError('이메일 또는 비밀번호가 올바르지 않습니다.'); return; }
+  enterAdmin();
+  switchTab('consult');
+}
+
+async function doLogout() {
+  await _sb.auth.signOut();
   location.reload();
 }
 
-function checkSession() {
-  if (sessionStorage.getItem(SESSION_KEY) === '1') {
-    document.getElementById('login-gate').style.display = 'none';
-    document.getElementById('admin-panel').style.display = 'block';
-    loadData();
-    startClock();
-  }
+async function checkSession() {
+  const { data } = await _sb.auth.getSession();
+  if (data.session) enterAdmin();
 }
 
 // ══════════════════════════════════════════
@@ -798,7 +837,7 @@ async function loadData() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="9">오류: ${error.message}<br><small style="color:var(--text-dim);margin-top:8px;display:block;">Supabase RLS 정책을 확인해주세요 (아래 안내 참고)</small></td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="9">오류: ${error.message}<br><small style="color:var(--text-dim);margin-top:8px;display:block;">로그인 세션이 만료되었을 수 있습니다. 새로고침 후 다시 로그인해 주세요.</small></td></tr>`;
     return;
   }
 
@@ -1049,74 +1088,122 @@ function switchTab(tab) {
 // ══════════════════════════════════════════
 // 부정클릭 탐지
 // ══════════════════════════════════════════
+// 차단 권장 기준. 이 점수 미만은 표에는 보여주되 일괄 복사에서는 제외한다.
+const BLOCK_THRESHOLD = 70;
+let fraudRows = [];
+
+function fmtDateTime(iso) {
+  const d = new Date(iso);
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 async function loadFraudData() {
   const tbody = document.getElementById('fraud-table-body');
-  tbody.innerHTML = '<tr class="loading-row"><td colspan="5">불러오는 중...</td></tr>';
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="8">불러오는 중...</td></tr>';
 
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const { data, error } = await _sb
-    .from('ad_clicks')
-    .select('ip_address, param, is_suspicious, created_at')
-    .gte('created_at', since)
-    .order('created_at', { ascending: false });
+  const days = parseInt(document.getElementById('fraud-days').value, 10) || 7;
+
+  // 판정은 DB에서 IP 단위로 계산한다. 브라우저 저장소를 쓰지 않으므로
+  // 시크릿 모드나 캐시 삭제로 회피할 수 없다.
+  const [{ data: rows, error }, { count }] = await Promise.all([
+    _sb.rpc('suspicious_ips', { p_days: days, p_min_clicks: 2 }),
+    _sb.from('ad_clicks')
+       .select('id', { count: 'exact', head: true })
+       .gte('created_at', new Date(Date.now() - days * 864e5).toISOString())
+  ]);
 
   if (error) {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="5">오류: ${error.message}</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="8">오류: ${esc(error.message)}<br>
+      <small style="color:var(--text-dim);">로그인 세션이 만료되었을 수 있습니다.</small></td></tr>`;
     return;
   }
 
-  // 통계 업데이트
-  document.getElementById('fraud-stat-total').textContent = data.length;
-  document.getElementById('fraud-stat-flagged').textContent = data.filter(r => r.is_suspicious).length;
+  fraudRows = rows || [];
+  const blockList = fraudRows.filter(r => r.score >= BLOCK_THRESHOLD);
 
-  // IP별 그룹핑
-  const ipMap = {};
-  data.forEach(r => {
-    if (!ipMap[r.ip_address]) {
-      ipMap[r.ip_address] = { count: 0, latest: r.created_at, params: new Set(), suspicious: false };
-    }
-    ipMap[r.ip_address].count++;
-    ipMap[r.ip_address].params.add(r.param);
-    if (r.is_suspicious) ipMap[r.ip_address].suspicious = true;
-    if (r.created_at > ipMap[r.ip_address].latest) ipMap[r.ip_address].latest = r.created_at;
-  });
+  document.getElementById('fraud-stat-total').textContent = count ?? 0;
+  document.getElementById('fraud-stat-ips').textContent = blockList.length;
+  document.getElementById('fraud-stat-flagged').textContent = fraudRows.length;
 
-  // 3회 이상만 필터링 후 횟수 내림차순 정렬
-  const fraudList = Object.entries(ipMap)
-    .filter(([, v]) => v.count >= 3)
-    .sort((a, b) => b[1].count - a[1].count);
-
-  document.getElementById('fraud-stat-ips').textContent = fraudList.length;
-
-  // 배지 업데이트
   const badge = document.getElementById('fraud-badge');
-  if (fraudList.length > 0) {
-    badge.textContent = fraudList.length;
+  if (blockList.length > 0) {
+    badge.textContent = blockList.length;
     badge.classList.add('show');
   } else {
     badge.classList.remove('show');
   }
 
-  if (!fraudList.length) {
-    tbody.innerHTML = '<tr class="fraud-empty"><td colspan="5">⚠️ 의심 IP가 없습니다. (24시간 내 3회 이상 클릭 없음)</td></tr>';
+  if (!fraudRows.length) {
+    tbody.innerHTML = `<tr class="fraud-empty"><td colspan="8">최근 ${days}일 내 의심 IP가 없습니다.</td></tr>`;
     return;
   }
 
-  tbody.innerHTML = fraudList.map(([ip, v]) => {
-    const dt = new Date(v.latest);
-    const dateStr = `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
-    const countClass = v.count >= 10 ? '' : 'warn';
-    const paramStr = [...v.params].join(', ').substring(0, 60);
+  tbody.innerHTML = fraudRows.map(r => {
+    const danger = r.score >= BLOCK_THRESHOLD;
+    const dwell = r.avg_dwell_ms == null ? '—' : (r.avg_dwell_ms / 1000).toFixed(1) + '초';
     return `<tr>
-      <td><strong style="font-family:monospace;letter-spacing:0.04em;">${esc(ip)}</strong></td>
-      <td><span class="ip-count-badge ${countClass}">${v.count}회${v.suspicious ? ' ⚠️' : ''}</span></td>
-      <td style="color:var(--text-dim);font-size:12px;">${dateStr}</td>
-      <td style="color:var(--text-dim);font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(paramStr)}</td>
-      <td>
-        <button class="copy-btn" onclick="copyIP('${esc(ip)}', this)">IP 복사</button>
-      </td>
+      <td><strong style="font-family:monospace;letter-spacing:0.04em;">${esc(r.ip)}</strong></td>
+      <td><span class="ip-count-badge ${danger ? '' : 'warn'}">${r.score}점</span></td>
+      <td>${r.clicks}회</td>
+      <td style="font-size:12px;color:${danger ? 'var(--red)' : 'var(--text-dim)'};">${esc(r.reasons || '—')}</td>
+      <td style="font-size:12px;color:var(--text-dim);">${dwell}</td>
+      <td style="font-size:12px;color:var(--text-dim);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(r.sites || '—')}</td>
+      <td style="font-size:12px;color:var(--text-dim);">${fmtDateTime(r.last_seen)}</td>
+      <td><button class="copy-btn" onclick="copyIP('${esc(r.ip)}', this)">IP 복사</button></td>
     </tr>`;
   }).join('');
+}
+
+// 네이버 광고노출제한 관리에 그대로 붙여넣을 수 있게 줄바꿈으로만 구분한다.
+async function copyBlockList() {
+  const list = fraudRows.filter(r => r.score >= BLOCK_THRESHOLD).map(r => r.ip);
+  if (!list.length) {
+    alert(`차단 권장(${BLOCK_THRESHOLD}점 이상) IP가 없습니다.\n\n지금 차단할 대상이 없다는 뜻이므로 정상입니다.`);
+    return;
+  }
+  const text = list.join('\n');
+  try {
+    await navigator.clipboard.writeText(text);
+    alert(`IP ${list.length}개를 복사했습니다.\n\n네이버 검색광고 → 도구 → 광고노출제한 관리에 붙여넣으세요.`);
+  } catch (e) {
+    prompt('아래 IP 목록을 복사하세요:', text);
+  }
+}
+
+// 네이버 클린센터 무효클릭 신고 시 첨부할 원본 방문 기록
+async function downloadFraudCsv() {
+  const days = parseInt(document.getElementById('fraud-days').value, 10) || 7;
+  const since = new Date(Date.now() - days * 864e5).toISOString();
+
+  const { data, error } = await _sb
+    .from('ad_clicks')
+    .select('created_at, ip_address, site, keyword, param, dwell_ms, engaged, bot_flags, referrer, user_agent')
+    .gte('created_at', since)
+    .order('created_at', { ascending: false });
+
+  if (error) { alert('내려받기 실패: ' + error.message); return; }
+  if (!data || !data.length) { alert('해당 기간에 기록된 광고 클릭이 없습니다.'); return; }
+
+  const cols = ['접수시각','IP','현장','검색어','광고파라미터','체류(초)','상호작용','자동화흔적','유입경로','브라우저'];
+  const cell = v => {
+    const s = v == null ? '' : String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const lines = [cols.join(',')].concat(data.map(r => [
+    fmtDateTime(r.created_at), r.ip_address, r.site, r.keyword, r.param,
+    r.dwell_ms == null ? '' : (r.dwell_ms / 1000).toFixed(1),
+    r.engaged === null ? '' : (r.engaged ? '있음' : '없음'),
+    r.bot_flags, r.referrer, r.user_agent
+  ].map(cell).join(',')));
+
+  // 엑셀에서 한글이 깨지지 않도록 BOM을 붙인다
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `무효클릭_신고자료_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 async function copyIP(ip, btn) {
