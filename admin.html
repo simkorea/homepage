@@ -722,6 +722,23 @@
         이미 지출된 광고비는 <strong style="color:var(--text);">환급신고용 CSV</strong>를 근거자료로 네이버 클린센터에 무효클릭 신고하면 환급받을 수 있습니다.
       </div>
 
+      <!-- ── 네이버 자동차단 (Edge Function 배포 후 사용) ── -->
+      <div style="background:var(--glass2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;">네이버 자동차단</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+          <button class="refresh-btn" onclick="naverBlock('list')">1. 연결 점검</button>
+          <button class="refresh-btn" onclick="naverBlock('preview')">2. 등록 대상 미리보기</button>
+          <button class="refresh-btn" onclick="naverBlock('apply')"
+                  style="border-color:#7f1d1d;color:#fca5a5;">3. 실제 등록</button>
+        </div>
+        <div style="font-size:12px;color:var(--text-dim);line-height:1.7;">
+          <strong style="color:var(--text);">1 → 2 → 3 순서로</strong> 진행하세요.
+          1·2번은 네이버에 아무것도 등록하지 않는 안전한 확인 단계입니다.
+          3번은 실제로 광고노출이 차단되므로, 반드시 2번으로 대상을 먼저 확인하세요.
+        </div>
+        <pre id="naver-block-result" style="display:none;margin-top:10px;padding:10px;background:#0b0f17;border:1px solid var(--border);border-radius:8px;font-size:11px;line-height:1.6;color:var(--text-dim);max-height:260px;overflow:auto;white-space:pre-wrap;word-break:break-all;"></pre>
+      </div>
+
       <div class="table-wrap">
         <table>
           <thead>
@@ -1168,6 +1185,59 @@ async function copyBlockList() {
     alert(`IP ${list.length}개를 복사했습니다.\n\n네이버 검색광고 → 도구 → 광고노출제한 관리에 붙여넣으세요.`);
   } catch (e) {
     prompt('아래 IP 목록을 복사하세요:', text);
+  }
+}
+
+// ── 네이버 광고노출제한 자동 등록 ──────────────────────────
+// Edge Function(naver-ip-block)을 호출한다. API 키는 그 함수의
+// 시크릿에만 있고 이 페이지로는 절대 내려오지 않는다.
+async function naverBlock(action) {
+  const box = document.getElementById('naver-block-result');
+  box.style.display = 'block';
+
+  if (action === 'apply') {
+    const targets = fraudRows.filter(r => r.score >= BLOCK_THRESHOLD);
+    if (!targets.length) { box.textContent = '등록할 대상이 없습니다. (70점 이상 IP 없음)'; return; }
+    const ok = confirm(
+      `IP ${targets.length}개를 네이버 광고노출제한에 실제로 등록합니다.\n\n` +
+      `등록되면 해당 IP에는 광고가 노출되지 않습니다.\n` +
+      `정상 고객이 섞여 있으면 그 사람은 광고를 볼 수 없게 됩니다.\n\n` +
+      `2번 미리보기로 대상을 확인하셨나요? 계속하시겠습니까?`
+    );
+    if (!ok) { box.textContent = '취소되었습니다.'; return; }
+  }
+
+  box.textContent = '요청 중...';
+
+  const { data: sess } = await _sb.auth.getSession();
+  if (!sess.session) { box.textContent = '로그인이 만료되었습니다. 새로고침 후 다시 로그인해 주세요.'; return; }
+
+  const days = parseInt(document.getElementById('fraud-days').value, 10) || 7;
+
+  try {
+    const res = await fetch(SUPABASE_URL + '/functions/v1/naver-ip-block', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + sess.session.access_token,
+        'apikey': SUPABASE_ANON,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ action, days })
+    });
+
+    const text = await res.text();
+    let out;
+    try { out = JSON.stringify(JSON.parse(text), null, 2); } catch (e) { out = text; }
+
+    if (res.status === 404) {
+      box.textContent =
+        'HTTP 404 — Edge Function이 아직 배포되지 않았습니다.\n' +
+        'Supabase 대시보드 → Edge Functions에서 naver-ip-block 함수를 먼저 배포하세요.';
+      return;
+    }
+    box.textContent = 'HTTP ' + res.status + '\n\n' + out;
+  } catch (e) {
+    box.textContent = '호출 실패: ' + e.message;
   }
 }
 
