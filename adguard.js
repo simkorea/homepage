@@ -93,6 +93,91 @@
     } catch (e) {}
   }
 
+  // ── 개인정보 수집 고지 ───────────────────────────────────────
+  // 위 accessGuard가 모든 방문에서 IP를 기록하므로, 고지도 모든
+  // 방문에서 노출한다. 스크립트를 설치하면 수집과 고지가 항상
+  // 함께 따라가도록 여기에 포함시켰다.
+  (function privacyNotice() {
+    if (document.getElementById('adguard-privacy-link')) return;
+
+    var wrap = document.createElement('div');
+    wrap.id = 'adguard-privacy-link';
+    wrap.style.cssText = 'text-align:center;font-size:11px;line-height:1.6;' +
+      'padding:16px 16px 96px;color:#8b8b8b;font-family:system-ui,-apple-system,sans-serif;';
+    wrap.innerHTML = '<a href="#" style="color:#8b8b8b;text-decoration:underline;">개인정보 수집 안내</a>';
+
+    wrap.querySelector('a').addEventListener('click', function (e) {
+      e.preventDefault();
+      showPrivacyModal();
+    });
+
+    function append() { document.body.appendChild(wrap); }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', append);
+    } else {
+      append();
+    }
+  })();
+
+  function showPrivacyModal() {
+    if (document.getElementById('adguard-privacy-modal')) return;
+
+    var ov = document.createElement('div');
+    ov.id = 'adguard-privacy-modal';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:2147483600;background:rgba(0,0,0,.72);' +
+      'display:flex;align-items:center;justify-content:center;padding:20px;' +
+      'font-family:system-ui,-apple-system,sans-serif;';
+
+    var box = document.createElement('div');
+    box.style.cssText = 'background:#fff;color:#222;max-width:560px;width:100%;' +
+      'max-height:82vh;overflow:auto;border-radius:12px;padding:24px;font-size:13px;line-height:1.75;';
+    box.innerHTML =
+      '<div style="font-size:17px;font-weight:700;margin-bottom:14px;">개인정보 수집 안내</div>' +
+      '<p style="margin:0 0 16px;color:#555;">본 사이트는 광고비 부정 소진(부정클릭) 방지와 비정상 접속 차단을 위해 아래 정보를 자동으로 수집·이용합니다.</p>' +
+
+      '<div style="font-weight:600;margin:14px 0 6px;">1. 수집 항목</div>' +
+      '<ul style="margin:0 0 4px;padding-left:18px;color:#555;">' +
+      '<li>IP 주소</li>' +
+      '<li>브라우저·기기 정보(User-Agent, 화면 해상도, 언어, 시간대 등을 조합해 만든 식별값)</li>' +
+      '<li>방문 기록(방문 일시, 유입 경로, 검색 키워드, 페이지 체류시간, 상호작용 여부)</li>' +
+      '</ul>' +
+      '<p style="margin:6px 0 0;color:#888;font-size:12px;">※ 성명·연락처 등은 이 목적으로 수집하지 않습니다. 상담·예약 신청 시 별도 동의를 받아 수집합니다.</p>' +
+
+      '<div style="font-weight:600;margin:16px 0 6px;">2. 수집 목적</div>' +
+      '<ul style="margin:0;padding-left:18px;color:#555;">' +
+      '<li>광고 부정클릭 탐지 및 광고비 부정 소진 방지</li>' +
+      '<li>검색광고 무효클릭 환급 신청을 위한 증빙 자료 확보</li>' +
+      '<li>짧은 시간 내 반복 접속 등 비정상 트래픽 차단</li>' +
+      '</ul>' +
+
+      '<div style="font-weight:600;margin:16px 0 6px;">3. 보유 및 이용 기간</div>' +
+      '<ul style="margin:0;padding-left:18px;color:#555;">' +
+      '<li>광고 유입 기록: 수집일로부터 최대 1년 보관 후 파기</li>' +
+      '<li>반복 접속 판정용 임시 기록: 수집 후 2일 내 자동 삭제</li>' +
+      '</ul>' +
+
+      '<div style="font-weight:600;margin:16px 0 6px;">4. 처리 근거</div>' +
+      '<p style="margin:0;color:#555;">개인정보 보호법 제15조 제1항 제6호(개인정보처리자의 정당한 이익 달성에 필요한 경우)에 따라 처리합니다.</p>' +
+
+      '<div style="font-weight:600;margin:16px 0 6px;">5. 제3자 제공</div>' +
+      '<p style="margin:0;color:#555;">원칙적으로 제3자에게 제공하지 않습니다. 다만 검색광고 무효클릭 환급을 신청하는 경우, 해당 광고 플랫폼(네이버 등)에 증빙 자료로 제출될 수 있습니다.</p>' +
+
+      '<div style="font-weight:600;margin:16px 0 6px;">6. 처리 위탁 및 보관</div>' +
+      '<p style="margin:0;color:#555;">수집된 정보는 클라우드 데이터베이스 서비스(Supabase)에 저장·보관됩니다.</p>' +
+
+      '<div style="font-weight:600;margin:16px 0 6px;">7. 수집 거부 방법</div>' +
+      '<p style="margin:0;color:#555;">브라우저에서 자바스크립트 실행을 차단하면 위 정보는 수집되지 않습니다. 다만 이 경우 사이트 일부 기능이 정상 동작하지 않을 수 있습니다.</p>' +
+
+      '<button id="adguard-privacy-close" style="margin-top:22px;width:100%;padding:11px;' +
+      'border:0;border-radius:8px;background:#222;color:#fff;font-size:14px;cursor:pointer;">닫기</button>';
+
+    ov.appendChild(box);
+    function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    box.querySelector('#adguard-privacy-close').addEventListener('click', close);
+    document.body.appendChild(ov);
+  }
+
   // ── 광고 유입 판별 ───────────────────────────────────────────
   // 네이버 검색광고는 NaPm/nvadId 등을, 구글은 gclid를 붙여 보낸다.
   var AD_PARAMS = [
