@@ -141,11 +141,28 @@ Deno.serve(async (req) => {
     if (action !== 'apply') return json({ error: 'action은 list / preview / apply 중 하나여야 합니다.' }, 400);
 
     // ── 실제 등록 ─────────────────────────────────────────────
+    // 먼저 네이버에 이미 등록된 목록을 읽는다.
+    // 다른 목적으로 직접 등록해 둔 IP를 덮어쓰거나 지우지 않기 위해,
+    // 추가(POST)만 하고 기존 항목은 절대 건드리지 않는다.
+    const existing = await naver('GET', IP_PATH);
+    const existingIps: string[] = Array.isArray(existing.body)
+      ? (existing.body as Array<{ filterIp?: string }>)
+          .map((e) => e.filterIp)
+          .filter((v): v is string => typeof v === 'string')
+      : [];
+
     const results = [];
     for (const t of targets) {
+      // 이미 등록돼 있으면 네이버를 호출하지 않고 건너뛴다
+      if (existingIps.includes(t.ip)) {
+        results.push({ ip: t.ip, score: t.score, ok: true, already: true, status: 200 });
+        continue;
+      }
+
       // 설명은 25자 제한 (네이버 에러코드 5502)
       const memo = `자동차단 ${t.score}점`.slice(0, 25);
-      const r = await naver('POST', IP_PATH, { ipAddress: t.ip, memo });
+      // 필드명은 조회 응답과 동일한 filterIp를 쓴다
+      const r = await naver('POST', IP_PATH, { filterIp: t.ip, memo });
 
       // 5503 = 이미 등록된 IP. 실패가 아니라 이미 처리된 상태다.
       const already = JSON.stringify(r.body).includes('5503');
@@ -162,6 +179,7 @@ Deno.serve(async (req) => {
     return json({
       action,
       threshold: BLOCK_THRESHOLD,
+      existingCount: existingIps.length,
       attempted: results.length,
       succeeded: results.filter(r => r.ok).length,
       results,
