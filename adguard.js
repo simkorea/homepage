@@ -180,9 +180,17 @@
 
   // ── 광고 유입 판별 ───────────────────────────────────────────
   // 네이버 검색광고는 NaPm/nvadId 등을, 구글은 gclid를 붙여 보낸다.
+  // 네이버 검색광고 "자동 추적 URL 파라미터"를 켜면 파워링크 기준 10개가
+  // 붙어 들어온다. n_keyword(내가 구매한 키워드)와 n_query(고객이 실제로
+  // 친 검색어)는 서로 다른 값이므로 반드시 따로 저장한다.
+  // 이 둘의 차이가 광고비 누수를 찾는 핵심 단서다.
   var AD_PARAMS = [
-    'NaPm', 'nvadId', 'n_keyword', 'na_keyword', 'nclicks', 'n_media',
-    'n_query', 'n_rank', 'n_ad_group', 'n_campaign_type', 'NaBs',
+    // 네이버 자동 추적 파라미터 (파워링크 10종)
+    'n_campaign_type', 'n_ad_group', 'n_media', 'n_ad', 'n_keyword',
+    'n_keyword_id', 'n_query', 'n_match', 'n_rank', 'n_ad_group_type',
+    // 네이버가 별도로 붙이는 값
+    'NaPm', 'nvadId', 'nclicks', 'NaBs', 'na_keyword',
+    // 구글·메타·수동 UTM
     'gclid', 'gad_source', 'gbraid', 'wbraid', 'fbclid', 'utm_source'
   ];
 
@@ -190,9 +198,25 @@
   var hits = AD_PARAMS.filter(function (p) { return params.has(p); });
   if (!hits.length) return;   // 광고 유입이 아니면 아무것도 하지 않는다
 
-  // 검색 키워드 (네이버가 실어 보내는 값 중 먼저 잡히는 것)
+  // 구매한 키워드. 광고주가 입찰한 값이다.
   var keyword = params.get('n_keyword') || params.get('na_keyword') ||
-                params.get('n_query')   || params.get('utm_term')   || '';
+                params.get('utm_term')  || '';
+
+  // 고객이 검색창에 실제로 입력한 말. 키워드 확장으로 들어오면
+  // 구매 키워드와 전혀 다른 값이 찍힌다.
+  var searchQuery = params.get('n_query') || '';
+
+  // 매치 방식 (네이버 정의) — 확장 유입을 걸러내는 기준이 된다
+  var MATCH_LABEL = {
+    '1': '일치', '2': '키워드확장', '3': '연관검색',
+    '4': '유사검색어', '5': '스마트블록'
+  };
+  var matchRaw  = params.get('n_match') || '';
+  var matchType = MATCH_LABEL[matchRaw] || matchRaw;
+
+  // 광고 노출 순위. 숫자가 아니면 버린다.
+  var rankRaw = parseInt(params.get('n_rank') || '', 10);
+  var adRank  = isNaN(rankRaw) ? null : rankRaw;
 
   var paramSummary = hits.map(function (p) {
     return p + '=' + (params.get(p) || '').slice(0, 60);
@@ -256,7 +280,10 @@
     p_referrer: (document.referrer || '').slice(0, 300),
     p_landing_path: (location.pathname + location.search).slice(0, 300),
     p_fingerprint: makeFingerprint(),
-    p_bot_flags: detectBotFlags()
+    p_bot_flags: detectBotFlags(),
+    p_search_query: searchQuery.slice(0, 200),
+    p_match_type: matchType.slice(0, 20),
+    p_ad_rank: adRank
   })
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (id) { if (id) clickId = id; })
