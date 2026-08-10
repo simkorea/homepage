@@ -656,6 +656,14 @@ footer {
   .cta-banner-content { padding: 40px 28px; }
   .hero-btns .btn-secondary { display: none; }
 }
+
+/* ── 2·3단 그리드: 화면이 좁아지면 단을 줄인다 ──────────────
+   전에는 이 값들이 인라인 스타일로 박혀 있어 미디어쿼리가 먹지
+   않았고, 390px에서도 2단을 유지해 상담 폼이 94px로 찌그러졌다. */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; }
+.g3 { display: grid; grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 900px) { .g3 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 767px) { .g2, .g3 { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -788,7 +796,7 @@ footer {
 
   <!-- Design Concept -->
   <section class="section">
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center;">
+    <div class="g2" style="gap:48px; align-items:center;">
       <div class="fade-up">
         <div class="section-tag">Three Values</div>
         <h2 class="section-title" style="font-size: clamp(24px, 3vw, 42px);">
@@ -983,7 +991,7 @@ footer {
       <div class="section-tag"><iconify-icon icon="solar:document-text-bold"></iconify-icon> Project Overview</div>
       <h2 class="section-title">사업 개요</h2>
     </div>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:48px; margin-top:40px; align-items:start;">
+    <div class="g2" style="gap:48px; margin-top:40px; align-items:start;">
       <div class="fade-up">
         <div style="border:1px solid var(--border); border-radius:20px; overflow:hidden;">
           <table class="specs-table">
@@ -1024,7 +1032,7 @@ footer {
     <div style="border-radius:24px; overflow:hidden; border:1px solid var(--border); margin-bottom:40px;" class="fade-up">
       <img src="./images/koritzhill/location_map.jpg" alt="더코리츠힐 남산 입지 지도 - 신당동 버티고개역 6호선" loading="lazy" style="width:100%; display:block;">
     </div>
-    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:20px;">
+    <div class="g3" style="gap:20px;">
       <div class="info-card fade-up">
         <div class="info-card-icon"><iconify-icon icon="solar:train-bold" style="color:var(--gold); font-size:24px;"></iconify-icon></div>
         <h3 style="font-size:16px; font-weight:700; margin-bottom:10px;">초역세권 교통</h3>
@@ -1053,7 +1061,7 @@ footer {
       <h2 class="section-title">더코리츠힐 남산만의<br><em>PREMIUM TOP 5</em></h2>
       <p class="section-sub">서울 중심에서 교통·자연·공간·생활 편의를 한 곳에서 누리는 하이엔드 주거.</p>
     </div>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:56px;">
+    <div class="g2" style="gap:20px; margin-top:56px;">
       <div class="premium-card fade-up" style="height:420px;">
         <img class="premium-card-img" src="./images/koritzhill/rooftop.jpg" alt="더코리츠힐 남산 옥상정원 N서울타워 파노라마 조망" loading="lazy">
         <div class="premium-card-overlay"></div>
@@ -1075,7 +1083,7 @@ footer {
         </div>
       </div>
     </div>
-    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-top:20px;">
+    <div class="g3" style="gap:20px; margin-top:20px;">
       <div class="premium-card fade-up" style="height:340px;">
         <img class="premium-card-img" src="./images/koritzhill/living.jpg" alt="더코리츠힐 남산 강남 하이엔드 풀옵션 인테리어 거실" loading="lazy">
         <div class="premium-card-overlay"></div>
@@ -1239,7 +1247,7 @@ footer {
       <h2 class="section-title">욕실 컬러 옵션<br><em>TWO COLORWAYS</em></h2>
       <p class="section-sub">라이트·다크 두 가지 마감 옵션 중 선택. 월플라이팅 변기·레인샤워·세면대 일체형 수전 등 호텔 사양 위생기구가 적용됩니다.</p>
     </div>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+    <div class="g2" style="gap:20px;">
       <div class="fade-up" style="border-radius:20px; overflow:hidden; border:1px solid var(--border); position:relative;">
         <img src="./images/koritzhill/bath_light.jpg" alt="더코리츠힐 남산 욕실 라이트 컬러 옵션" loading="lazy" style="width:100%; display:block; aspect-ratio:4/3; object-fit:cover;">
         <div style="position:absolute; bottom:0; left:0; padding:10px 18px; background:rgba(26,23,20,0.78); color:#fff; font-size:12px; font-weight:700; letter-spacing:0.1em;">BATH · LIGHT</div>
@@ -1263,7 +1271,7 @@ footer {
       <h2 class="section-title">실제 단지의 <em>인테리어 미리보기</em></h2>
       <p class="section-sub">트렌디한 LDK 배치와 절제된 베이지 톤 마감, 풀패키지 가전이 어우러진 거주 공간.</p>
     </div>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+    <div class="g2" style="gap:20px;">
       <div class="fade-up" style="border-radius:20px; overflow:hidden; border:1px solid var(--border); position:relative;">
         <img src="./images/koritzhill/interior_living.jpg" alt="더코리츠힐 남산 거실 인테리어 실사 렌더링" loading="lazy" style="width:100%; display:block; aspect-ratio:4/3; object-fit:cover;">
         <div style="position:absolute; bottom:0; left:0; padding:10px 18px; background:rgba(26,23,20,0.78); color:#fff; font-size:12px; font-weight:700; letter-spacing:0.1em;">LIVING</div>
@@ -1285,7 +1293,7 @@ footer {
       <h2 class="section-title">도심에서 누리는<br><em>프리미엄 라이프</em></h2>
       <p class="section-sub">옥상정원 · 남산 둘레길 · 입주민 전용 커뮤니티까지, 단지 안팎의 프리미엄 라이프스타일을 한 곳에서.</p>
     </div>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:40px;">
+    <div class="g2" style="gap:24px; margin-top:40px;">
       <div class="fade-up" style="border-radius:24px; overflow:hidden; border:1px solid var(--border);">
         <img src="./images/koritzhill/community.jpg" alt="더코리츠힐 남산 입주민 전용 커뮤니티 헬스장" loading="lazy" style="width:100%; display:block; aspect-ratio:4/3; object-fit:cover;">
       </div>
@@ -1293,7 +1301,7 @@ footer {
         <img src="./images/koritzhill/namsan_trail.jpg" alt="더코리츠힐 남산 둘레길 도보 1분" loading="lazy" style="width:100%; display:block; aspect-ratio:4/3; object-fit:cover;">
       </div>
     </div>
-    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-top:40px;">
+    <div class="g3" style="gap:20px; margin-top:40px;">
       <div class="info-card fade-up">
         <div class="info-card-icon"><iconify-icon icon="solar:tree-bold" style="color:var(--gold); font-size:24px;"></iconify-icon></div>
         <h3 style="font-size:16px; font-weight:700; margin-bottom:10px;">남산 조망 옥상정원</h3>
@@ -1336,7 +1344,7 @@ footer {
       <h2 class="section-title">디테일까지 완성한 <em>단지 공용공간</em></h2>
       <p class="section-sub">현관부터 엘리베이터, 지하주차장까지 입주 첫인상을 결정하는 공용공간을 호텔급 마감으로 완성했습니다.</p>
     </div>
-    <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:16px;">
+    <div class="g2" style="gap:16px;">
       <div class="fade-up" style="border-radius:18px; overflow:hidden; border:1px solid var(--border); position:relative;">
         <img src="./images/koritzhill/entrance_door.jpg" alt="더코리츠힐 남산 세대 현관문" loading="lazy" style="width:100%; display:block; aspect-ratio:4/3; object-fit:cover;">
         <div style="position:absolute; bottom:0; left:0; padding:9px 16px; background:rgba(26,23,20,0.78); color:#fff; font-size:11px; font-weight:700; letter-spacing:0.1em;">ENTRANCE DOOR</div>
@@ -1373,7 +1381,7 @@ footer {
   </section>
   <hr class="divider">
   <section class="section" id="consult-form">
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:start;">
+    <div class="g2" style="gap:64px; align-items:start;">
       <div class="fade-up">
         <div class="section-tag"><iconify-icon icon="solar:chat-round-bold"></iconify-icon> Consultation</div>
         <h2 class="section-title" style="font-size:clamp(24px,3vw,40px);">관심고객<br><em>등록하기</em></h2>
