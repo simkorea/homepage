@@ -76,7 +76,7 @@
   "openingHoursSpecification": {
     "@type": "OpeningHoursSpecification",
     "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
-    "opens": "09:00", "closes": "18:00"
+    "opens": "10:00", "closes": "19:00"
   },
   "url": "https://homepage-iota-dun.vercel.app/"
 }
@@ -1795,7 +1795,9 @@ function renderTimeSlots(dateStr) {
   const container = document.getElementById('time-slots-container');
   if (!container) return;
 
-  const slots = ['10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
+  // 상담 가능 시간 10:00 ~ 19:00 (정각 단위)
+  const slots = ['10:00', '11:00', '12:00', '13:00', '14:00',
+                 '15:00', '16:00', '17:00', '18:00', '19:00'];
   const booked = bookedSlots[dateStr] || [];
 
   container.innerHTML = `
