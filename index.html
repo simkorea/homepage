@@ -664,6 +664,133 @@ footer {
 .g3 { display: grid; grid-template-columns: repeat(3, 1fr); }
 @media (max-width: 900px) { .g3 { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 767px) { .g2, .g3 { grid-template-columns: 1fr; } }
+
+/* ══════════ 혜택 안내 팝업 ══════════
+   전용 네임스페이스(kp-)로 격리한다. 본문 클래스와 섞으면
+   Tailwind 유틸리티에 눌려 조용히 깨진다. */
+.kp-dim{
+  position:fixed; inset:0; z-index:1200;
+  display:none; align-items:center; justify-content:center;
+  padding:20px 16px;
+  background:rgba(8,16,32,.72); -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
+}
+.kp-dim.kp-on{ display:flex; animation:kpFade .28s ease both; }
+@keyframes kpFade{ from{opacity:0} to{opacity:1} }
+
+.kp-card{
+  outline:none;
+  position:relative; width:100%; max-width:430px;
+  max-height:calc(100vh - 40px); max-height:calc(100dvh - 40px);
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  background:#0d1f3d; border-radius:22px; padding:9px;
+  box-shadow:0 30px 70px -20px rgba(0,0,0,.6);
+  animation:kpPop .38s cubic-bezier(.2,.8,.3,1) both;
+}
+@keyframes kpPop{ from{opacity:0; transform:translateY(22px) scale(.97)} to{opacity:1; transform:none} }
+
+.kp-inner{ background:#f7f5f0; border-radius:15px; padding:24px 18px 18px; }
+
+.kp-x{
+  position:absolute; top:14px; right:14px; z-index:3;
+  width:38px; height:38px; display:grid; place-items:center;
+  background:none; border:0; cursor:pointer; color:#0d1f3d; font-size:26px; line-height:1;
+  border-radius:50%; transition:background-color .2s, transform .15s;
+}
+.kp-x:hover{ background:rgba(13,31,61,.1) }
+.kp-x:active{ transform:scale(.92) }
+
+.kp-kicker{ text-align:center; font-size:17px; font-weight:800; color:#0d1f3d; letter-spacing:-.03em; }
+.kp-kicker em{ font-style:normal; box-shadow:inset 0 -8px 0 #f5c451; padding:0 3px; }
+.kp-title{
+  margin-top:8px; text-align:center; font-size:31px; font-weight:900;
+  letter-spacing:-.045em; color:#0d1f3d; line-height:1.2;
+}
+.kp-title b{ color:#c79a3c; font-weight:900; }
+
+.kp-list{ margin-top:18px; display:grid; gap:11px; }
+.kp-row{
+  position:relative; display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:center;
+  background:#fff; border:1.5px solid #0d1f3d; border-radius:13px; padding:16px 14px 16px 40px;
+}
+.kp-row.kp-accent{ border-color:#c79a3c }
+.kp-no{
+  position:absolute; left:0; top:14px;
+  width:31px; height:35px; display:grid; place-items:center;
+  background:#0d1f3d; color:#fff; border-radius:0 9px 9px 0;
+  font-size:19px; font-weight:900; font-variant-numeric:tabular-nums;
+}
+.kp-row.kp-accent .kp-no{ background:#c79a3c }
+
+.kp-h{ text-align:center; font-size:16px; font-weight:800; color:#0d1f3d; letter-spacing:-.035em; line-height:1.35; }
+.kp-h strong{ display:block; margin-top:2px; font-size:26px; font-weight:900; letter-spacing:-.05em; }
+.kp-h .kp-red{ color:#d92b2b }
+.kp-h .kp-gold{ color:#c79a3c }
+.kp-h small{ display:table; margin:6px auto 0; font-size:11.5px; font-weight:700; color:#0d1f3d; background:#f0e6cf; border-radius:20px; padding:3px 9px; }
+
+.kp-b{
+  background:#0d1f3d; border-radius:11px; padding:14px 11px; text-align:center;
+  font-size:13px; font-weight:600; color:#dbe4f0; line-height:1.55; letter-spacing:-.03em;
+}
+.kp-b i{ display:block; margin:0 auto 7px; width:24px; height:24px; border:2px solid #f5c451; border-radius:50%; color:#f5c451; font-style:normal; font-size:14px; font-weight:900; line-height:20px; }
+.kp-b em{ font-style:normal; color:#f5c451; font-weight:800; }
+
+.kp-cta{
+  margin-top:14px; display:flex; align-items:center; justify-content:center; gap:8px;
+  background:#f0c04e; border-radius:12px; padding:13px 12px;
+  font-size:16px; font-weight:900; color:#0d1f3d; letter-spacing:-.04em; text-align:center;
+}
+.kp-cta em{ font-style:normal; color:#d92b2b }
+
+.kp-btns{ margin-top:11px; display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+.kp-btn{
+  display:flex; align-items:center; justify-content:center; gap:7px;
+  padding:15px 10px; border-radius:12px; border:1.5px solid transparent; cursor:pointer;
+  font-size:15px; font-weight:800; letter-spacing:-.03em; text-decoration:none;
+  font-family:'Pretendard',-apple-system,sans-serif;
+  transition:background-color .2s, color .2s, border-color .2s, transform .14s;
+}
+.kp-btn iconify-icon{ font-size:18px }
+.kp-tel{ background:#fff; border-color:#0d1f3d; color:#0d1f3d }
+.kp-tel:hover{ background:#0d1f3d; color:#fff }
+.kp-ask{ background:#0d1f3d; color:#fff }
+.kp-ask:hover{ background:#1b3560 }
+.kp-btn:active{ transform:translateY(1px) }
+
+.kp-foot{
+  margin-top:13px; display:flex; align-items:center; justify-content:space-between; gap:10px;
+  border-top:1px solid #e2ddd6; padding-top:11px;
+}
+.kp-today{ display:flex; align-items:center; gap:7px; font-size:12.5px; color:#6b6460; cursor:pointer; user-select:none; }
+.kp-today input{ width:16px; height:16px; accent-color:#0d1f3d; cursor:pointer; }
+.kp-close-txt{ background:none; border:0; cursor:pointer; font-size:12.5px; color:#6b6460; text-decoration:underline; text-underline-offset:2px; font-family:inherit; }
+.kp-close-txt:hover{ color:#1a1714 }
+
+.kp-note{ margin-top:9px; font-size:10.5px; color:#8b847f; line-height:1.6; letter-spacing:-.02em; }
+
+/* 모바일 — 2단을 유지한 채 밀도만 높인다.
+   1단으로 풀면 카드가 970px까지 늘어나 전화/문의 버튼이 첫 화면 밖으로 밀린다.
+   원본 시안도 좁은 폭에서 2단이라 그대로 간다. */
+@media (max-width:430px){
+  .kp-dim{ padding:12px 9px }
+  .kp-card{ padding:7px }
+  .kp-inner{ padding:19px 11px 13px }
+  .kp-kicker{ font-size:14px }
+  .kp-title{ font-size:25px }
+  .kp-list{ gap:8px }
+  .kp-row{ gap:8px; padding:13px 10px 13px 31px }
+  .kp-no{ top:11px; width:24px; height:29px; font-size:16px; border-radius:0 7px 7px 0 }
+  .kp-h{ font-size:13.5px }
+  .kp-h strong{ font-size:21px }
+  .kp-h small{ font-size:10px; padding:3px 7px }
+  .kp-b{ padding:11px 7px; font-size:11.5px; line-height:1.5 }
+  .kp-b i{ width:21px; height:21px; font-size:12px; line-height:17px; margin-bottom:5px }
+  .kp-cta{ font-size:14px; padding:11px 8px; margin-top:11px }
+  .kp-btn{ font-size:14px; padding:13px 6px }
+  .kp-note{ font-size:10px }
+}
+@media (prefers-reduced-motion:reduce){
+  .kp-dim.kp-on, .kp-card{ animation:none }
+}
 </style>
 </head>
 <body>
@@ -1573,6 +1700,119 @@ footer {
     상담신청
   </button>
 </div>
+
+<!-- ══ 혜택 안내 팝업 ══ -->
+<div class="kp-dim" id="kpDim" role="dialog" aria-modal="true" aria-labelledby="kpTitle" hidden>
+  <div class="kp-card" id="kpCard" tabindex="-1">
+    <button class="kp-x" type="button" id="kpX" aria-label="팝업 닫기">✕</button>
+    <div class="kp-inner">
+
+      <p class="kp-kicker"><em>놓치면 후회!</em></p>
+      <h2 class="kp-title" id="kpTitle">지금이 <b>최적의 기회!</b></h2>
+
+      <div class="kp-list">
+        <div class="kp-row">
+          <span class="kp-no">1</span>
+          <p class="kp-h">토지거래허가<strong class="kp-red">미적용!</strong></p>
+          <p class="kp-b"><i>✓</i>거래 부담 없이<br><em>자유롭게 매매 가능!</em></p>
+        </div>
+
+        <div class="kp-row kp-accent">
+          <span class="kp-no">2</span>
+          <p class="kp-h">최대대출<strong class="kp-gold">6억 +@</strong><small>시행사 후순위대출</small></p>
+          <p class="kp-b"><i>✓</i>넉넉한 자금조달로<br>계약부터 입주까지 <em>걱정 NO!</em></p>
+        </div>
+
+        <div class="kp-row">
+          <span class="kp-no">3</span>
+          <p class="kp-h">갭투자<strong class="kp-red">가능!</strong></p>
+          <p class="kp-b"><i>✓</i>실투자금 <em>3억</em>으로<br><em>내집마련</em>의 기회!</p>
+        </div>
+      </div>
+
+      <p class="kp-cta">
+        <iconify-icon icon="solar:bell-bing-bold"></iconify-icon>
+        지금 상담받고, <em>한정 혜택</em>까지!
+      </p>
+
+      <div class="kp-btns">
+        <a class="kp-btn kp-tel" href="tel:1555-1087" id="kpTel">
+          <iconify-icon icon="solar:phone-bold"></iconify-icon>전화하기
+        </a>
+        <button class="kp-btn kp-ask" type="button" id="kpAsk">
+          <iconify-icon icon="solar:chat-round-bold"></iconify-icon>문의하기
+        </button>
+      </div>
+
+      <div class="kp-foot">
+        <label class="kp-today"><input type="checkbox" id="kpToday">오늘 하루 열지 않기</label>
+        <button class="kp-close-txt" type="button" id="kpClose">닫기</button>
+      </div>
+
+      <p class="kp-note">※ 대출 한도·조건은 개인 신용도와 금융기관 심사 결과에 따라 달라질 수 있으며, 실제 자금 계획은 상담 시 안내드립니다.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var KEY = 'koritz_popup_hide_until';
+  var dim = document.getElementById('kpDim');
+  if (!dim) return;
+
+  var card = document.getElementById('kpCard');
+  var lastFocus = null;
+
+  function hiddenToday(){
+    try { return Date.now() < (parseInt(localStorage.getItem(KEY), 10) || 0); }
+    catch (e) { return false; }   // 시크릿 모드에서 localStorage가 막히면 그냥 띄운다
+  }
+  function open(){
+    lastFocus = document.activeElement;
+    dim.hidden = false;
+    dim.classList.add('kp-on');
+    document.body.style.overflow = 'hidden';
+    card.focus();   // X에 걸면 포커스 링이 장식처럼 보인다. 카드로 옮겨 링 없이 포커스만 진입
+  }
+  function close(){
+    if (document.getElementById('kpToday').checked){
+      try { localStorage.setItem(KEY, String(Date.now() + 864e5)); } catch (e) {}
+    }
+    dim.classList.remove('kp-on');
+    dim.hidden = true;
+    document.body.style.overflow = '';
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+
+  document.getElementById('kpX').addEventListener('click', close);
+  document.getElementById('kpClose').addEventListener('click', close);
+  dim.addEventListener('click', function(e){ if (e.target === dim) close(); });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && dim.classList.contains('kp-on')) close();
+  });
+
+  /* 전화하기는 그대로 걸리게 두고, 팝업만 닫는다 */
+  document.getElementById('kpTel').addEventListener('click', function(){ setTimeout(close, 60); });
+
+  /* 문의하기 → 팝업을 닫은 뒤 상담 폼으로. goConsult가 페이지 전환까지 처리한다 */
+  document.getElementById('kpAsk').addEventListener('click', function(){
+    close();
+    if (typeof goConsult === 'function') goConsult();
+  });
+
+  /* 포커스가 팝업 밖으로 새지 않게 가둔다 */
+  card.addEventListener('keydown', function(e){
+    if (e.key !== 'Tab') return;
+    var f = card.querySelectorAll('button, a[href], input');
+    if (!f.length) return;
+    var first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+  });
+
+  if (!hiddenToday()) setTimeout(open, 900);
+})();
+</script>
 
 <script>
 /* ── Supabase ──
