@@ -166,6 +166,63 @@
              font-size:11.5px; font-weight:600; cursor:pointer; text-decoration:none;
              transition:background-color .2s, border-color .2s; }
   .cal-btn:hover { background:rgba(96,165,250,.24); border-color:var(--blue); }
+
+  /* ── 업그레이드 공통 ── */
+  .row-dup { color:var(--red); font-size:10.5px; font-weight:700; margin-left:6px; }
+  .tel-link { color:var(--text); text-decoration:none; border-bottom:1px dashed rgba(255,255,255,.25); }
+  .tel-link:hover { color:var(--gold); border-color:var(--gold); }
+  .memo-mark { display:inline-block; margin-left:6px; color:var(--blue); font-size:11px; }
+  .st-new  { background:var(--blue-dim);  color:var(--blue); }
+  .st-prog { background:var(--gold-dim);  color:var(--gold); }
+  .st-done { background:var(--green-dim); color:var(--green); }
+  .memo-box { width:100%; min-height:72px; padding:10px 12px; border-radius:8px; resize:vertical;
+              background:var(--surface2); border:1px solid var(--border); color:var(--text);
+              font-family:inherit; font-size:13px; line-height:1.6; }
+  .memo-box:focus { outline:none; border-color:var(--gold); }
+  .memo-in { width:100%; padding:9px 12px; border-radius:8px; background:var(--surface2);
+             border:1px solid var(--border); color:var(--text); font-family:inherit; font-size:13px; }
+  .memo-in:focus { outline:none; border-color:var(--gold); }
+  .save-btn { margin-top:10px; padding:9px 18px; border-radius:8px; background:var(--gold);
+              border:0; color:#1a1a1d; font-weight:700; font-size:13px; cursor:pointer; }
+  .save-btn:disabled { opacity:.5; cursor:not-allowed; }
+
+  /* ── 캘린더 ── */
+  .cal-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+  .cal-nav { display:flex; align-items:center; gap:8px; }
+  .cal-nav button { width:34px; height:34px; border-radius:8px; background:var(--glass);
+                    border:1px solid var(--border); color:var(--text); cursor:pointer; font-size:15px; }
+  .cal-nav button:hover { background:var(--glass2); }
+  .cal-title { font-size:17px; font-weight:700; min-width:150px; text-align:center; }
+  .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:1px; background:var(--border);
+              border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  .cal-dow { background:var(--surface2); padding:9px 0; text-align:center; font-size:11.5px; color:var(--text-dim); font-weight:700; }
+  .cal-dow.sun { color:var(--red); } .cal-dow.sat { color:var(--blue); }
+  .cal-cell { background:var(--surface); min-height:104px; padding:7px 7px 9px; }
+  .cal-cell.out { background:var(--bg); }
+  .cal-cell.today { background:rgba(201,165,90,.09); box-shadow:inset 0 0 0 1px var(--gold); }
+  .cal-d { font-size:12px; color:var(--text-dim); font-variant-numeric:tabular-nums; }
+  .cal-cell.today .cal-d { color:var(--gold); font-weight:700; }
+  .cal-ev { display:block; width:100%; text-align:left; margin-top:5px; padding:4px 6px; border-radius:6px;
+            background:var(--gold-dim); border:1px solid rgba(201,165,90,.34); color:var(--text);
+            font-size:11px; line-height:1.35; cursor:pointer; }
+  .cal-ev:hover { background:rgba(201,165,90,.28); }
+  .cal-ev b { display:block; font-weight:700; }
+  .cal-ev span { color:var(--text-dim); font-size:10px; }
+  .cal-more { margin-top:4px; font-size:10.5px; color:var(--text-dim); }
+
+  /* ── 성과 대시보드 ── */
+  .perf-note { margin-top:14px; font-size:11.5px; color:var(--text-dim); line-height:1.65; }
+  .bar-cell { display:flex; align-items:center; gap:8px; justify-content:flex-end; }
+  .bar-cell i { display:block; height:7px; border-radius:4px; background:var(--gold); min-width:2px; }
+  .cv-hi { color:var(--green); font-weight:700; }
+  .cv-lo { color:var(--red); font-weight:700; }
+
+  /* ── 알림 ── */
+  .notif-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;
+               padding:11px 14px; border-radius:10px; background:var(--surface); border:1px solid var(--border); }
+  .notif-bar label { display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--text-dim); cursor:pointer; }
+  .notif-bar input[type=checkbox] { width:15px; height:15px; accent-color:var(--gold); cursor:pointer; }
+  .notif-new { color:var(--gold); font-weight:700; font-size:12.5px; }
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -633,6 +690,14 @@
         부정클릭 탐지
         <span class="tab-badge" id="fraud-badge">0</span>
       </button>
+      <button class="tab-btn" id="tab-calendar-btn" onclick="switchTab('calendar')">
+        <iconify-icon icon="solar:calendar-bold"></iconify-icon>
+        방문 캘린더
+      </button>
+      <button class="tab-btn" id="tab-perf-btn" onclick="switchTab('perf')">
+        <iconify-icon icon="solar:chart-square-bold"></iconify-icon>
+        광고 성과
+      </button>
       <button class="tab-btn" id="tab-visitor-btn" onclick="switchTab('visitor')">
         <iconify-icon icon="solar:users-group-rounded-bold"></iconify-icon>
         방문자 통계
@@ -673,6 +738,20 @@
       <button class="refresh-btn" onclick="loadData()">
         <iconify-icon icon="solar:refresh-bold"></iconify-icon> 새로고침
       </button>
+    </div>
+
+    <div class="notif-bar">
+      <label><input type="checkbox" id="opt-auto" checked>60초마다 자동 새로고침</label>
+      <label><input type="checkbox" id="opt-notify">새 신청 알림 받기</label>
+      <span id="notif-status" class="notif-new"></span>
+    </div>
+
+    <!-- 기간 필터 -->
+    <div class="filter-bar" id="period-filter" style="margin-bottom:10px;">
+      <button class="filter-btn active" onclick="setPeriod('all')">전체 기간</button>
+      <button class="filter-btn" onclick="setPeriod('today')">오늘</button>
+      <button class="filter-btn" onclick="setPeriod('7')">최근 7일</button>
+      <button class="filter-btn" onclick="setPeriod('30')">최근 30일</button>
     </div>
 
     <!-- 현장별 필터 (source 자동 생성) -->
@@ -811,6 +890,66 @@
 
     </div><!-- /tab-fraud -->
 
+
+
+    <!-- ── 탭: 방문 캘린더 ── -->
+    <div class="tab-content" id="tab-calendar">
+      <div class="cal-head">
+        <div>
+          <h2 style="font-size:17px;font-weight:700;">방문 예약 캘린더</h2>
+          <p style="font-size:12.5px;color:var(--text-dim);margin-top:5px;">
+            희망 방문일이 적힌 신청만 표시됩니다. 일정을 누르면 상세가 열립니다.
+          </p>
+        </div>
+        <div class="cal-nav">
+          <button type="button" id="cal-prev" aria-label="이전 달">&lsaquo;</button>
+          <div class="cal-title" id="cal-title">—</div>
+          <button type="button" id="cal-next" aria-label="다음 달">&rsaquo;</button>
+          <button type="button" id="cal-today" style="width:auto;padding:0 12px;font-size:12.5px;">이번 달</button>
+        </div>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <p class="perf-note" id="cal-note"></p>
+    </div>
+
+    <!-- ── 탭: 광고 성과 ── -->
+    <div class="tab-content" id="tab-perf">
+      <div class="section-head" style="margin-bottom:16px;">
+        <h2 style="font-size:17px;font-weight:700;">현장별 광고 성과</h2>
+        <p style="font-size:12.5px;color:var(--text-dim);margin-top:5px;">
+          방문자(고유 IP) 대비 상담 신청 수로 전환율을 계산합니다.
+        </p>
+      </div>
+      <div class="filter-bar" id="perf-period" style="margin-bottom:14px;">
+        <button class="filter-btn" onclick="setPerfPeriod('7')">최근 7일</button>
+        <button class="filter-btn active" onclick="setPerfPeriod('30')">최근 30일</button>
+        <button class="filter-btn" onclick="setPerfPeriod('all')">전체</button>
+      </div>
+      <div class="table-wrap" style="margin-bottom:20px;">
+        <table>
+          <thead>
+            <tr>
+              <th>현장</th>
+              <th style="text-align:right">방문자</th>
+              <th style="text-align:right">상담 신청</th>
+              <th style="text-align:right">전환율</th>
+              <th style="text-align:right;width:180px">비교</th>
+            </tr>
+          </thead>
+          <tbody id="perf-tbody"><tr class="empty-row"><td colspan="5">불러오는 중…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-wrap">
+        <div style="padding:14px 16px 0;font-size:13px;font-weight:700;">유입 검색어별 상담 전환</div>
+        <table>
+          <thead>
+            <tr><th>검색어</th><th>현장</th><th style="text-align:right">광고 클릭</th><th style="text-align:right">체류 중앙값</th></tr>
+          </thead>
+          <tbody id="perf-kw"><tr class="empty-row"><td colspan="4">불러오는 중…</td></tr></tbody>
+        </table>
+      </div>
+      <p class="perf-note" id="perf-note"></p>
+    </div>
 
     <!-- ── 탭: 방문자 통계 ── -->
     <div class="tab-content" id="tab-visitor">
@@ -1034,9 +1173,11 @@ async function loadData() {
   }
 
   allData = data || [];
+  if (lastSeenId === null && allData.length) lastSeenId = allData[0].id;
   buildSourceFilter();
   updateStats();
   renderTable();
+  if (!autoTimer) startAutoRefresh();
 }
 
 // ── 방문예약·생년월일 파싱 ──
@@ -1100,8 +1241,38 @@ function typeOf(t) { return ({ '84': '84㎡', '59': '59㎡' })[t] || t || '—';
 function jsStr(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
 
 // ── 필터 파이프라인 ──
-function getScoped() {            // 현장 + 검색 (통계카드 기준)
-  let rows = allData;
+let currentPeriod = 'all';
+function setPeriod(p) {
+  currentPeriod = p;
+  document.querySelectorAll('#period-filter .filter-btn').forEach((b, i) => {
+    b.classList.toggle('active', ['all', 'today', '7', '30'][i] === p);
+  });
+  updateStats(); renderTable();
+}
+
+// 같은 번호로 2건 이상 들어온 신청을 표시하기 위한 집계
+function dupPhones() {
+  const c = new Map();
+  for (const r of allData) {
+    const k = (r.phone || '').replace(/\D/g, '');
+    if (!k) continue;
+    c.set(k, (c.get(k) || 0) + 1);
+  }
+  return c;
+}
+
+function inPeriod(r) {
+  if (currentPeriod === 'all') return true;
+  const t = new Date(r.created_at).getTime();
+  if (currentPeriod === 'today') {
+    const m = new Date(); m.setHours(0, 0, 0, 0);
+    return t >= m.getTime();
+  }
+  return t >= Date.now() - parseInt(currentPeriod, 10) * 864e5;
+}
+
+function getScoped() {            // 현장 + 검색 + 기간 (통계카드 기준)
+  let rows = allData.filter(inPeriod);
   if (currentSource !== 'all') rows = rows.filter(r => (r.source || '') === currentSource);
   const q = currentSearch.trim().toLowerCase();
   if (q) rows = rows.filter(r =>
@@ -1162,6 +1333,7 @@ function setFilter(f) {
 }
 
 function renderTable() {
+  const DUP = dupPhones();
   const rows = getVisible();
   const tbody = document.getElementById('table-body');
   if (!rows.length) {
@@ -1175,6 +1347,10 @@ function renderTable() {
       ? '<span class="badge badge-pending">대기 중</span>'
       : '<span class="badge badge-done">완료</span>';
     const { visit } = parseVisit(r.message);
+    const _dupKey = (r.phone || '').replace(/\D/g, '');
+    const _dupN = _dupKey ? (DUP.get(_dupKey) || 0) : 0;
+    const dupMark  = _dupN > 1 ? `<span class="row-dup" title="같은 번호로 ${_dupN}건 접수">중복 ${_dupN}</span>` : '';
+    const memoMark = r.memo ? '<span class="memo-mark" title="메모 있음">✎</span>' : '';
     const _cal = gcalUrl(r);
     const calBtn = _cal
       ? `<a class="cal-btn" style="margin-top:5px" href="${_cal}" target="_blank" rel="noopener noreferrer" title="구글 캘린더에 일정으로 추가">
@@ -1190,8 +1366,8 @@ function renderTable() {
       : `<button class="action-btn revert" onclick="changeStatus('${r.id}','pending')">대기로 변경</button>`;
 
     return `<tr>
-      <td data-label="이름"><strong>${esc(r.name)}</strong></td>
-      <td data-label="연락처">${esc(r.phone)}</td>
+      <td data-label="이름"><strong>${esc(r.name)}</strong>${dupMark}${memoMark}</td>
+      <td data-label="연락처"><a class="tel-link" href="tel:${esc(r.phone)}">${esc(r.phone)}</a></td>
       <td data-label="이메일" style="color:var(--text-dim)">${esc(r.email||'—')}</td>
       <td data-label="사이트">${sourceBadgeHtml(r.source)}</td>
       <td data-label="타입">${typeLabel}</td>
@@ -1220,7 +1396,7 @@ function exportCSV() {
   const header = ['접수일시','현장','타입','이름','연락처','이메일','희망방문','상태','문의내용'];
   const lines = [header.map(csvCell).join(',')];
   rows.forEach(r => {
-    const { visit, birth, body } = parseVisit(r.message);
+    const { visit, body } = parseVisit(r.message);
     lines.push([
       fmtDateTime(r.created_at), r.source || '', typeOf(r.unit_type),
       r.name || '', r.phone || '', r.email || '',
@@ -1263,7 +1439,7 @@ async function deleteRow(id) {
 function openDetail(id) {
   const r = allData.find(d => d.id === id);
   if (!r) return;
-  const { visit, body } = parseVisit(r.message);
+  const { visit, birth, body } = parseVisit(r.message);
   const dateStr = fmtDateTime(r.created_at);
   const typeLabel = typeOf(r.unit_type);
   const statusLabel = (r.status === 'done') ? '처리 완료' : '대기 중';
@@ -1288,8 +1464,32 @@ function openDetail(id) {
     <div class="detail-row"><div class="detail-label">문의 내용</div><div class="detail-value">${esc(body||'—')}</div></div>
     <div class="detail-row"><div class="detail-label">상태</div><div class="detail-value">${statusLabel}</div></div>
     <div class="detail-row"><div class="detail-label">접수일시</div><div class="detail-value">${dateStr}</div></div>
+    <div class="detail-row" style="display:block">
+      <div class="detail-label" style="margin-bottom:8px">담당자</div>
+      <input class="memo-in" id="d-assignee" value="${esc(r.assignee || '')}" placeholder="담당자 이름">
+      <div class="detail-label" style="margin:14px 0 8px">상담 메모</div>
+      <textarea class="memo-box" id="d-memo" placeholder="통화 내용, 다음 할 일 등을 적어두세요.">${esc(r.memo || '')}</textarea>
+      <button class="save-btn" id="d-save" onclick="saveDetail('${r.id}')">메모 · 담당자 저장</button>
+      <span id="d-saved" style="margin-left:10px;font-size:12.5px;color:var(--green);"></span>
+    </div>
   `;
   document.getElementById('detail-modal').classList.add('open');
+}
+
+async function saveDetail(id) {
+  const btn = document.getElementById('d-save');
+  const memo = document.getElementById('d-memo').value.trim();
+  const assignee = document.getElementById('d-assignee').value.trim();
+  btn.disabled = true; btn.textContent = '저장 중…';
+  const { error } = await _sb.from('consultations')
+    .update({ memo: memo || null, assignee: assignee || null }).eq('id', id);
+  btn.disabled = false; btn.textContent = '메모 · 담당자 저장';
+  if (error) { alert('저장 실패: ' + error.message); return; }
+  const row = allData.find(d => d.id === id);
+  if (row) { row.memo = memo || null; row.assignee = assignee || null; }
+  document.getElementById('d-saved').textContent = '저장됐습니다';
+  setTimeout(() => { const e = document.getElementById('d-saved'); if (e) e.textContent = ''; }, 2500);
+  renderTable();
 }
 
 function closeModal() {
@@ -1330,16 +1530,234 @@ function startClock() {
 // TABS
 // ══════════════════════════════════════════
 function switchTab(tab) {
-  ['consult', 'fraud', 'visitor', 'keyword'].forEach(t => {
+  ['consult', 'fraud', 'calendar', 'perf', 'visitor', 'keyword'].forEach(t => {
     document.getElementById('tab-' + t).classList.toggle('active', t === tab);
     document.getElementById('tab-' + t + '-btn').classList.toggle('active', t === tab);
   });
   if (tab === 'fraud')   loadFraudData();
   if (tab === 'keyword') loadKeywordData();
   if (tab === 'visitor') { loadVisitorData(); startVisitorAuto(); } else stopVisitorAuto();
+  if (tab === 'calendar') renderCalendar();
+  if (tab === 'perf')     loadPerfData();
 }
 
 
+
+
+
+// ══════════════════════════════════════════
+// 방문 예약 캘린더
+// ══════════════════════════════════════════
+let calYM = null;   // {y, m}  m: 0-11
+
+function calVisitDate(r) {
+  const { visit } = parseVisit(r.message);
+  if (!visit) return null;
+  const m = visit.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/);
+  if (!m) return null;
+  return { y: +m[1], mo: +m[2] - 1, d: +m[3], hm: m[4] ? m[4] + ':' + m[5] : null };
+}
+
+function renderCalendar() {
+  if (!calYM) { const t = new Date(); calYM = { y: t.getFullYear(), m: t.getMonth() }; }
+  const { y, m } = calYM;
+  document.getElementById('cal-title').textContent = y + '년 ' + (m + 1) + '월';
+
+  const byDay = new Map();
+  let total = 0;
+  for (const r of allData) {
+    const v = calVisitDate(r);
+    if (!v || v.y !== y || v.mo !== m) continue;
+    if (!byDay.has(v.d)) byDay.set(v.d, []);
+    byDay.get(v.d).push({ r, hm: v.hm });
+    total++;
+  }
+
+  const first = new Date(y, m, 1);
+  const startDow = first.getDay();
+  const days = new Date(y, m + 1, 0).getDate();
+  const prevDays = new Date(y, m, 0).getDate();
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+
+  const DOW = ['일', '월', '화', '수', '목', '금', '토'];
+  let html = DOW.map((d, i) =>
+    `<div class="cal-dow ${i === 0 ? 'sun' : i === 6 ? 'sat' : ''}">${d}</div>`).join('');
+
+  const cells = [];
+  for (let i = 0; i < startDow; i++) cells.push({ out: true, d: prevDays - startDow + 1 + i });
+  for (let d = 1; d <= days; d++) cells.push({ out: false, d });
+  while (cells.length % 7) cells.push({ out: true, d: cells.length - startDow - days + 1 });
+
+  for (const c of cells) {
+    if (c.out) { html += `<div class="cal-cell out"><div class="cal-d">${c.d}</div></div>`; continue; }
+    const isToday = (new Date(y, m, c.d).getTime() === today.getTime());
+    const list = byDay.get(c.d) || [];
+    const shown = list.slice(0, 3).map(({ r, hm }) =>
+      `<button class="cal-ev" onclick="openDetail('${r.id}')" title="${esc(r.name)} · ${esc(r.phone)}">
+         <b>${esc(r.name)}</b><span>${hm ? hm + ' · ' : ''}${esc((r.source || '').slice(0, 10))}</span>
+       </button>`).join('');
+    const more = list.length > 3 ? `<div class="cal-more">+${list.length - 3}건 더</div>` : '';
+    html += `<div class="cal-cell${isToday ? ' today' : ''}"><div class="cal-d">${c.d}</div>${shown}${more}</div>`;
+  }
+
+  document.getElementById('cal-grid').innerHTML = html;
+  document.getElementById('cal-note').textContent =
+    y + '년 ' + (m + 1) + '월 방문 예약 ' + total + '건' +
+    (total === 0 ? ' · 희망 방문일이 적힌 신청이 이 달에는 없습니다.' : '');
+}
+
+document.getElementById('cal-prev').addEventListener('click', () => {
+  calYM.m--; if (calYM.m < 0) { calYM.m = 11; calYM.y--; } renderCalendar();
+});
+document.getElementById('cal-next').addEventListener('click', () => {
+  calYM.m++; if (calYM.m > 11) { calYM.m = 0; calYM.y++; } renderCalendar();
+});
+document.getElementById('cal-today').addEventListener('click', () => {
+  const t = new Date(); calYM = { y: t.getFullYear(), m: t.getMonth() }; renderCalendar();
+});
+
+// ══════════════════════════════════════════
+// 광고 성과
+// ══════════════════════════════════════════
+let perfPeriod = '30';
+function setPerfPeriod(p) {
+  perfPeriod = p;
+  document.querySelectorAll('#perf-period .filter-btn').forEach((b, i) => {
+    b.classList.toggle('active', ['7', '30', 'all'][i] === p);
+  });
+  loadPerfData();
+}
+
+async function loadPerfData() {
+  const tb = document.getElementById('perf-tbody');
+  const kb = document.getElementById('perf-kw');
+  const since = perfPeriod === 'all' ? null
+    : new Date(Date.now() - parseInt(perfPeriod, 10) * 864e5).toISOString();
+
+  let visits, clicks;
+  try {
+    visits = await fetchAllVisits();
+    let q = _sb.from('ad_clicks').select('site, keyword, search_query, dwell_ms, created_at')
+                .order('created_at', { ascending: false }).limit(3000);
+    if (since) q = q.gte('created_at', since);
+    const { data, error } = await q;
+    if (error) throw error;
+    clicks = data || [];
+  } catch (err) {
+    tb.innerHTML = `<tr class="empty-row"><td colspan="5">불러오지 못했습니다: ${esc(err.message)}</td></tr>`;
+    return;
+  }
+
+  const cut = since ? new Date(since).getTime() : 0;
+  const vBySite = new Map();
+  for (const v of visits) {
+    if (new Date(v.created_at).getTime() < cut) continue;
+    const k = v.site || '미확인';
+    if (!vBySite.has(k)) vBySite.set(k, new Set());
+    vBySite.get(k).add(v.ip || '?');
+  }
+  const cBySite = new Map();
+  for (const r of allData) {
+    if (new Date(r.created_at).getTime() < cut) continue;
+    const k = r.source || '미확인';
+    cBySite.set(k, (cBySite.get(k) || 0) + 1);
+  }
+
+  const sites = [...new Set([...vBySite.keys(), ...cBySite.keys()])];
+  const rows = sites.map(site => {
+    const v = (vBySite.get(site) || new Set()).size;
+    const c = cBySite.get(site) || 0;
+    return { site, v, c, cv: v ? (c / v * 100) : null };
+  }).sort((a, b) => b.v - a.v);
+
+  const maxV = Math.max(1, ...rows.map(r => r.v));
+  tb.innerHTML = rows.length ? rows.map(r => {
+    const cvTxt = r.cv === null ? '<span style="color:var(--text-dim)">방문 기록 없음</span>'
+      : `<span class="${r.cv >= 3 ? 'cv-hi' : r.cv < 1 ? 'cv-lo' : ''}">${r.cv.toFixed(2)}%</span>`;
+    return `<tr>
+      <td>${sourceBadgeHtml(r.site === '미확인' ? null : r.site)}</td>
+      <td style="text-align:right">${r.v.toLocaleString('ko-KR')}</td>
+      <td style="text-align:right;font-weight:700">${r.c.toLocaleString('ko-KR')}</td>
+      <td style="text-align:right">${cvTxt}</td>
+      <td><div class="bar-cell"><i style="width:${Math.round(r.v / maxV * 130)}px"></i></div></td>
+    </tr>`;
+  }).join('') : '<tr class="empty-row"><td colspan="5">데이터가 없습니다.</td></tr>';
+
+  // 검색어별
+  const kwMap = new Map();
+  for (const c of clicks) {
+    const kw = (c.search_query || c.keyword || '').trim();
+    if (!kw) continue;
+    const key = kw + '||' + (c.site || '');
+    if (!kwMap.has(key)) kwMap.set(key, { kw, site: c.site, n: 0, dwell: [] });
+    const e = kwMap.get(key);
+    e.n++;
+    if (c.dwell_ms != null) e.dwell.push(c.dwell_ms);
+  }
+  const kws = [...kwMap.values()].sort((a, b) => b.n - a.n).slice(0, 25);
+  const med = a => { if (!a.length) return null; const x = [...a].sort((p, q) => p - q); return x[Math.floor(x.length / 2)]; };
+  kb.innerHTML = kws.length ? kws.map(e => {
+    const m = med(e.dwell);
+    return `<tr>
+      <td>${esc(e.kw)}</td>
+      <td>${sourceBadgeHtml(e.site)}</td>
+      <td style="text-align:right;font-weight:700">${e.n}</td>
+      <td style="text-align:right;${m != null && m < 5000 ? 'color:var(--red)' : ''}">${m == null ? '—' : (m / 1000).toFixed(1) + '초'}</td>
+    </tr>`;
+  }).join('') : '<tr class="empty-row"><td colspan="4">광고 클릭 기록이 없습니다. 네이버 자동 추적 파라미터가 꺼져 있으면 기록되지 않습니다.</td></tr>';
+
+  document.getElementById('perf-note').innerHTML =
+    '전환율 = 상담 신청 ÷ 방문자(고유 IP). 방문자는 adguard.js가 설치된 현장만 집계됩니다.<br>' +
+    '체류 시간이 5초 미만인 검색어는 붉게 표시했습니다 — 광고비만 나가고 이탈하는 조합일 수 있습니다.';
+}
+
+// ══════════════════════════════════════════
+// 알림 · 자동 새로고침
+// ══════════════════════════════════════════
+let lastSeenId = null, autoTimer = null;
+
+function optAuto()   { const e = document.getElementById('opt-auto');   return e && e.checked; }
+function optNotify() { const e = document.getElementById('opt-notify'); return e && e.checked; }
+
+function startAutoRefresh() {
+  if (autoTimer) clearInterval(autoTimer);
+  autoTimer = setInterval(async () => {
+    if (!optAuto()) return;
+    if (document.getElementById('detail-modal').classList.contains('open')) return;  // 상세 보는 중엔 건드리지 않는다
+    const before = allData.length ? allData[0].id : null;
+    await loadData();
+    const after = allData.length ? allData[0].id : null;
+    if (after && before && after !== before) notifyNew();
+  }, 60000);
+}
+
+function notifyNew() {
+  const r = allData[0];
+  if (!r) return;
+  const msg = (r.source || '현장 미확인') + ' · ' + (r.name || '') + ' ' + (r.phone || '');
+  const bar = document.getElementById('notif-status');
+  if (bar) {
+    bar.textContent = '새 신청 도착 — ' + msg;
+    setTimeout(() => { if (bar) bar.textContent = ''; }, 20000);
+  }
+  if (optNotify() && 'Notification' in window && Notification.permission === 'granted') {
+    try { new Notification('새 상담 신청', { body: msg, tag: 'consult-' + r.id }); } catch (e) {}
+  }
+}
+
+document.addEventListener('change', e => {
+  if (e.target && e.target.id === 'opt-notify' && e.target.checked) {
+    if (!('Notification' in window)) {
+      alert('이 브라우저는 알림을 지원하지 않습니다.');
+      e.target.checked = false; return;
+    }
+    if (Notification.permission === 'denied') {
+      alert('브라우저에서 알림이 차단돼 있습니다. 주소창 왼쪽 자물쇠 아이콘에서 허용으로 바꿔주세요.');
+      e.target.checked = false; return;
+    }
+    if (Notification.permission !== 'granted') Notification.requestPermission();
+  }
+});
 
 // ══════════════════════════════════════════
 // 방문자 통계
