@@ -142,6 +142,30 @@
   .main-wrap { padding: 32px; max-width: 1200px; margin: 0 auto; }
 
   /* ── STATS ── */
+
+  /* ── 방문자 통계 ── */
+  .vis-grid { display:grid; gap:12px; grid-template-columns:repeat(4,1fr); margin-bottom:20px; }
+  @media (max-width:900px){ .vis-grid{ grid-template-columns:repeat(2,1fr) } }
+  .vis-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px 18px 20px; position:relative; }
+  .vis-card.live { border-color:rgba(74,222,128,.35); }
+  .vis-k { font-size:12px; color:var(--text-dim); letter-spacing:.02em; display:flex; align-items:center; gap:6px; }
+  .vis-dot { width:7px; height:7px; border-radius:50%; background:var(--green); animation:vpulse 1.8s ease-in-out infinite; }
+  @keyframes vpulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+  .vis-v { margin-top:10px; font-size:30px; font-weight:700; line-height:1; font-variant-numeric:tabular-nums; }
+  .vis-card.live .vis-v { color:var(--green); }
+  .vis-card.gold .vis-v { color:var(--gold); }
+  .vis-sub { margin-top:8px; font-size:11.5px; color:var(--text-dim); }
+  .vis-bars { display:flex; align-items:flex-end; gap:6px; height:120px; padding:14px 0 0; }
+  .vis-bar { flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:6px; height:100%; }
+  .vis-bar i { display:block; width:100%; background:var(--gold-dim); border:1px solid rgba(201,165,90,.4); border-radius:4px 4px 0 0; min-height:2px; transition:height .5s ease; }
+  .vis-bar b { font-size:11px; font-weight:700; color:var(--text); font-variant-numeric:tabular-nums; }
+  .vis-bar span { font-size:10.5px; color:var(--text-dim); }
+  .vis-note { margin-top:14px; font-size:11.5px; color:var(--text-dim); line-height:1.6; }
+  .cal-btn { display:inline-flex; align-items:center; gap:5px; padding:5px 10px; border-radius:7px;
+             background:var(--blue-dim); color:var(--blue); border:1px solid rgba(96,165,250,.32);
+             font-size:11.5px; font-weight:600; cursor:pointer; text-decoration:none;
+             transition:background-color .2s, border-color .2s; }
+  .cal-btn:hover { background:rgba(96,165,250,.24); border-color:var(--blue); }
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -609,6 +633,10 @@
         부정클릭 탐지
         <span class="tab-badge" id="fraud-badge">0</span>
       </button>
+      <button class="tab-btn" id="tab-visitor-btn" onclick="switchTab('visitor')">
+        <iconify-icon icon="solar:users-group-rounded-bold"></iconify-icon>
+        방문자 통계
+      </button>
       <button class="tab-btn" id="tab-keyword-btn" onclick="switchTab('keyword')">
         <iconify-icon icon="solar:magnifer-bold"></iconify-icon>
         검색어 분석
@@ -783,6 +811,70 @@
 
     </div><!-- /tab-fraud -->
 
+
+    <!-- ── 탭: 방문자 통계 ── -->
+    <div class="tab-content" id="tab-visitor">
+      <div class="section-head" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+        <div>
+          <h2 style="font-size:17px;font-weight:700;">사이트별 방문자</h2>
+          <p style="font-size:12.5px;color:var(--text-dim);margin-top:5px;">
+            adguard.js가 설치된 전 현장의 방문 기록입니다. 방문자는 <strong>고유 IP</strong> 기준입니다.
+          </p>
+        </div>
+        <button class="btn-sm" id="vis-reload" type="button"
+                style="padding:8px 14px;border-radius:8px;background:var(--glass);border:1px solid var(--border);color:var(--text);cursor:pointer;font-size:12.5px;">
+          새로고침
+        </button>
+      </div>
+
+      <div class="vis-grid">
+        <div class="vis-card live">
+          <div class="vis-k"><span class="vis-dot"></span>실시간 (최근 5분)</div>
+          <div class="vis-v" id="vis-live">-</div>
+          <div class="vis-sub" id="vis-live-sub">&nbsp;</div>
+        </div>
+        <div class="vis-card gold">
+          <div class="vis-k">오늘</div>
+          <div class="vis-v" id="vis-today">-</div>
+          <div class="vis-sub" id="vis-today-sub">&nbsp;</div>
+        </div>
+        <div class="vis-card">
+          <div class="vis-k">최근 7일</div>
+          <div class="vis-v" id="vis-week">-</div>
+          <div class="vis-sub" id="vis-week-sub">&nbsp;</div>
+        </div>
+        <div class="vis-card">
+          <div class="vis-k">전체 누적</div>
+          <div class="vis-v" id="vis-total">-</div>
+          <div class="vis-sub" id="vis-total-sub">&nbsp;</div>
+        </div>
+      </div>
+
+      <div class="table-wrap" style="margin-bottom:20px;">
+        <div style="padding:14px 16px 0;font-size:13px;font-weight:700;">최근 7일 방문자 추이</div>
+        <div class="vis-bars" id="vis-bars" style="padding:14px 16px 18px;"></div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>현장</th>
+              <th style="text-align:right">실시간</th>
+              <th style="text-align:right">오늘</th>
+              <th style="text-align:right">최근 7일</th>
+              <th style="text-align:right">전체</th>
+            </tr>
+          </thead>
+          <tbody id="vis-tbody">
+            <tr class="empty-row"><td colspan="5">불러오는 중…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="vis-note" id="vis-note"></p>
+    </div>
+
     <!-- ── 탭: 검색어 분석 ── -->
     <div class="tab-content" id="tab-keyword">
 
@@ -947,12 +1039,57 @@ async function loadData() {
   renderTable();
 }
 
-// ── 방문예약 파싱: "[희망방문: YYYY-MM-DD HH:MM] 내용" ──
+// ── 방문예약·생년월일 파싱 ──
+// 현장마다 형식이 다르다.
+//   남산   "[희망방문: 2026-08-20 14:00] 내용"
+//   상동역·부천 "[방문 희망일] 2026-08-20\n[생년월일] 1985-03-17\n내용"
 function parseVisit(message) {
-  if (!message) return { visit: null, body: '' };
-  const m = String(message).match(/\[\s*희망방문\s*:\s*([^\]]+)\]/);
-  if (!m) return { visit: null, body: String(message).trim() };
-  return { visit: m[1].trim(), body: String(message).replace(m[0], '').trim() };
+  if (!message) return { visit: null, birth: null, body: '' };
+  let body = String(message);
+  let visit = null, birth = null;
+
+  const m1 = body.match(/\[\s*희망방문\s*:\s*([^\]]+)\]/);
+  if (m1) { visit = m1[1].trim(); body = body.replace(m1[0], ''); }
+
+  const m2 = body.match(/\[\s*방문\s*희망일\s*\]\s*([0-9]{4}-[0-9]{2}-[0-9]{2}(?:[ T][0-9]{2}:[0-9]{2})?)/);
+  if (m2) { visit = visit || m2[1].trim(); body = body.replace(m2[0], ''); }
+
+  const m3 = body.match(/\[\s*생년월일\s*\]\s*([0-9]{4}-?[0-9]{2}-?[0-9]{2})/);
+  if (m3) { birth = m3[1].trim(); body = body.replace(m3[0], ''); }
+
+  return { visit, birth, body: body.trim() };
+}
+
+// ── 구글 캘린더 등록 링크 ──
+// OAuth 없이 구글의 일정 만들기 화면을 미리 채워 연다.
+// 실제 등록은 사용자가 구글 화면에서 '저장'을 눌러야 완료된다.
+function gcalUrl(row) {
+  const { visit, body } = parseVisit(row.message);
+  if (!visit) return null;
+  const m = visit.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/);
+  if (!m) return null;
+  const [, y, mo, d, hh, mm] = m;
+  const start = new Date(+y, +mo - 1, +d, hh ? +hh : 10, mm ? +mm : 0);
+  const end   = new Date(start.getTime() + 60 * 60 * 1000);
+  const pad = v => String(v).padStart(2, '0');
+  const fmt = dt => dt.getFullYear() + pad(dt.getMonth() + 1) + pad(dt.getDate()) +
+                    'T' + pad(dt.getHours()) + pad(dt.getMinutes()) + '00';
+  const site = row.source || '현장 미확인';
+  const parts = [
+    '현장: ' + site,
+    '성함: ' + (row.name || '-'),
+    '연락처: ' + (row.phone || '-'),
+    '관심 타입: ' + (row.unit_type || '-'),
+    body ? '문의: ' + body : ''
+  ].filter(Boolean);
+  const q = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: '[' + site + '] ' + (row.name || '방문 상담'),
+    dates: fmt(start) + '/' + fmt(end),
+    details: parts.join('\n'),
+    ctz: 'Asia/Seoul'
+  });
+  return 'https://calendar.google.com/calendar/render?' + q.toString();
 }
 
 function fmtDateTime(iso) {
@@ -1038,6 +1175,11 @@ function renderTable() {
       ? '<span class="badge badge-pending">대기 중</span>'
       : '<span class="badge badge-done">완료</span>';
     const { visit } = parseVisit(r.message);
+    const _cal = gcalUrl(r);
+    const calBtn = _cal
+      ? `<a class="cal-btn" style="margin-top:5px" href="${_cal}" target="_blank" rel="noopener noreferrer" title="구글 캘린더에 일정으로 추가">
+          <iconify-icon icon="solar:calendar-add-bold"></iconify-icon>캘린더</a>`
+      : '';
     const visitCell = visit
       ? `<span class="badge badge-visit"><iconify-icon icon="solar:calendar-bold" style="font-size:12px"></iconify-icon> ${esc(visit)}</span>`
       : '<span style="color:var(--text-dim)">—</span>';
@@ -1053,7 +1195,7 @@ function renderTable() {
       <td data-label="이메일" style="color:var(--text-dim)">${esc(r.email||'—')}</td>
       <td data-label="사이트">${sourceBadgeHtml(r.source)}</td>
       <td data-label="타입">${typeLabel}</td>
-      <td data-label="희망방문">${visitCell}</td>
+      <td data-label="희망방문">${visitCell}${calBtn}</td>
       <td data-label="상태">${badge}</td>
       <td data-label="접수일시" style="color:var(--text-dim);font-size:12px">${dateStr}</td>
       <td data-label="작업">
@@ -1078,7 +1220,7 @@ function exportCSV() {
   const header = ['접수일시','현장','타입','이름','연락처','이메일','희망방문','상태','문의내용'];
   const lines = [header.map(csvCell).join(',')];
   rows.forEach(r => {
-    const { visit, body } = parseVisit(r.message);
+    const { visit, birth, body } = parseVisit(r.message);
     lines.push([
       fmtDateTime(r.created_at), r.source || '', typeOf(r.unit_type),
       r.name || '', r.phone || '', r.email || '',
@@ -1125,8 +1267,15 @@ function openDetail(id) {
   const dateStr = fmtDateTime(r.created_at);
   const typeLabel = typeOf(r.unit_type);
   const statusLabel = (r.status === 'done') ? '처리 완료' : '대기 중';
+  const gcal = gcalUrl(r);
+  const birthRow = birth
+    ? `<div class="detail-row"><div class="detail-label">생년월일</div><div class="detail-value">${esc(birth)}</div></div>`
+    : '';
   const visitRow = visit
-    ? `<div class="detail-row"><div class="detail-label">희망 방문일시</div><div class="detail-value" style="color:var(--gold);font-weight:600">${esc(visit)}</div></div>`
+    ? `<div class="detail-row"><div class="detail-label">희망 방문일시</div><div class="detail-value" style="color:var(--gold);font-weight:600">${esc(visit)}
+        ${gcal ? `<a class="cal-btn" style="margin-left:8px" href="${gcal}" target="_blank" rel="noopener noreferrer">
+          <iconify-icon icon="solar:calendar-add-bold"></iconify-icon>구글 캘린더에 추가</a>` : ''}
+      </div></div>` + birthRow
     : '';
 
   document.getElementById('modal-content').innerHTML = `
@@ -1181,13 +1330,133 @@ function startClock() {
 // TABS
 // ══════════════════════════════════════════
 function switchTab(tab) {
-  ['consult', 'fraud', 'keyword'].forEach(t => {
+  ['consult', 'fraud', 'visitor', 'keyword'].forEach(t => {
     document.getElementById('tab-' + t).classList.toggle('active', t === tab);
     document.getElementById('tab-' + t + '-btn').classList.toggle('active', t === tab);
   });
   if (tab === 'fraud')   loadFraudData();
   if (tab === 'keyword') loadKeywordData();
+  if (tab === 'visitor') { loadVisitorData(); startVisitorAuto(); } else stopVisitorAuto();
 }
+
+
+
+// ══════════════════════════════════════════
+// 방문자 통계
+// site_visits: id(uuid) / ip(text) / site(text) / created_at(timestamptz)
+// 방문자는 고유 IP 기준, 방문 수는 행 수 기준으로 따로 센다.
+// ══════════════════════════════════════════
+const VIS_PAGE = 1000;   // Supabase 한 번에 받는 최대 행 수
+const VIS_CAP  = 60000;  // 폭주 방지 상한
+let visTimer = null;
+
+function startVisitorAuto() {
+  stopVisitorAuto();
+  visTimer = setInterval(loadVisitorData, 30000);   // 실시간 지표라 30초마다
+}
+function stopVisitorAuto() {
+  if (visTimer) { clearInterval(visTimer); visTimer = null; }
+}
+
+async function fetchAllVisits() {
+  const rows = [];
+  for (let from = 0; from < VIS_CAP; from += VIS_PAGE) {
+    const { data, error } = await _sb
+      .from('site_visits')
+      .select('ip, site, created_at')
+      .order('created_at', { ascending: false })
+      .range(from, from + VIS_PAGE - 1);
+    if (error) throw error;
+    if (!data || !data.length) break;
+    rows.push(...data);
+    if (data.length < VIS_PAGE) break;
+  }
+  return rows;
+}
+
+async function loadVisitorData() {
+  const tbody = document.getElementById('vis-tbody');
+  const note  = document.getElementById('vis-note');
+  let rows;
+  try {
+    rows = await fetchAllVisits();
+  } catch (err) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="5">불러오지 못했습니다: ${esc(err.message)}<br>
+      <small style="color:var(--text-dim);">로그인 세션이 만료됐을 수 있습니다.</small></td></tr>`;
+    return;
+  }
+
+  const now = Date.now();
+  const t5   = now - 5 * 60 * 1000;
+  const t7   = now - 7 * 864e5;
+  const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
+  const t0 = midnight.getTime();
+
+  const buckets = { live: new Set(), today: new Set(), week: new Set(), all: new Set() };
+  const hits    = { live: 0, today: 0, week: 0, all: 0 };
+  const bySite  = new Map();
+  const byDay   = new Map();
+
+  for (const r of rows) {
+    const t = new Date(r.created_at).getTime();
+    const ip = r.ip || '?';
+    const site = r.site || '미확인';
+    if (!bySite.has(site)) bySite.set(site, { live:new Set(), today:new Set(), week:new Set(), all:new Set() });
+    const b = bySite.get(site);
+
+    buckets.all.add(ip); hits.all++; b.all.add(ip);
+    if (t >= t7) {
+      buckets.week.add(ip); hits.week++; b.week.add(ip);
+      const d = new Date(t); d.setHours(0,0,0,0);
+      const key = d.getTime();
+      if (!byDay.has(key)) byDay.set(key, new Set());
+      byDay.get(key).add(ip);
+    }
+    if (t >= t0) { buckets.today.add(ip); hits.today++; b.today.add(ip); }
+    if (t >= t5) { buckets.live.add(ip);  hits.live++;  b.live.add(ip); }
+  }
+
+  const setCard = (id, uniq, hit, label) => {
+    document.getElementById('vis-' + id).textContent = uniq.toLocaleString('ko-KR');
+    document.getElementById('vis-' + id + '-sub').textContent = label + ' · 방문 ' + hit.toLocaleString('ko-KR') + '회';
+  };
+  setCard('live',  buckets.live.size,  hits.live,  '접속 중');
+  setCard('today', buckets.today.size, hits.today, '자정 이후');
+  setCard('week',  buckets.week.size,  hits.week,  '7일간');
+  setCard('total', buckets.all.size,   hits.all,   '누적');
+
+  // 일자별 막대
+  const bars = [];
+  const maxV = Math.max(1, ...[...byDay.values()].map(s => s.size));
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - i);
+    const v = (byDay.get(d.getTime()) || new Set()).size;
+    const h = Math.round((v / maxV) * 100);
+    bars.push(`<div class="vis-bar" title="${d.getMonth()+1}/${d.getDate()} · ${v}명">
+      <b>${v}</b><i style="height:${h}%"></i><span>${d.getMonth()+1}/${d.getDate()}</span></div>`);
+  }
+  document.getElementById('vis-bars').innerHTML = bars.join('');
+
+  // 사이트별 표
+  const sorted = [...bySite.entries()].sort((a, b) => b[1].all.size - a[1].all.size);
+  tbody.innerHTML = sorted.length
+    ? sorted.map(([site, b]) => `<tr>
+        <td>${sourceBadgeHtml(site === '미확인' ? null : site)}</td>
+        <td style="text-align:right;${b.live.size ? 'color:var(--green);font-weight:700' : 'color:var(--text-dim)'}">${b.live.size}</td>
+        <td style="text-align:right;font-weight:600">${b.today.size.toLocaleString('ko-KR')}</td>
+        <td style="text-align:right">${b.week.size.toLocaleString('ko-KR')}</td>
+        <td style="text-align:right">${b.all.size.toLocaleString('ko-KR')}</td>
+      </tr>`).join('')
+    : '<tr class="empty-row"><td colspan="5">방문 기록이 없습니다.</td></tr>';
+
+  const capped = rows.length >= VIS_CAP;
+  note.innerHTML = '마지막 갱신 ' + new Date().toLocaleTimeString('ko-KR') +
+    ' · 30초마다 자동 새로고침 · 총 ' + rows.length.toLocaleString('ko-KR') + '건 집계' +
+    (capped ? ' <strong style="color:var(--red)">(상한 ' + VIS_CAP.toLocaleString('ko-KR') + '건에 도달해 일부만 집계했습니다)</strong>' : '') +
+    '<br>같은 사람이 여러 현장을 보면 현장마다 각각 1명으로 잡히므로, 현장별 합계는 전체 방문자와 다를 수 있습니다.';
+}
+
+document.getElementById('vis-reload').addEventListener('click', loadVisitorData);
 
 // ══════════════════════════════════════════
 // 검색어 분석
