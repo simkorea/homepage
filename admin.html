@@ -1405,6 +1405,7 @@ document.addEventListener('change', e => {
 function consultText(r) {
   const { visit, birth, body } = parseVisit(r.message);
   return [
+    '현장 : ' + (r.source || '-'),
     '이름 : ' + (r.name || '-'),
     '전화번호 : ' + (r.phone || '-'),
     '생년월일 : ' + (birth || '-'),
