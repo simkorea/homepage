@@ -864,8 +864,12 @@
           <input id="search-input" class="search-input" type="text" placeholder="이름·연락처 검색"
                  oninput="onSearch(this.value)" autocomplete="off">
         </label>
+        <button class="csv-btn" id="copy-pick-btn" onclick="copyPicked()" disabled
+                title="체크한 신청 내용을 복사합니다">
+          <iconify-icon icon="solar:copy-bold"></iconify-icon> <span id="copy-pick-label">선택 복사</span>
+        </button>
         <button class="csv-btn" onclick="copyLatest()" title="가장 최근 상담 신청 내용을 복사합니다">
-          <iconify-icon icon="solar:copy-bold"></iconify-icon> 최근 신청 복사
+          <iconify-icon icon="solar:copy-bold"></iconify-icon> 최근 복사
         </button>
         <button class="csv-btn" onclick="exportCSV()">
           <iconify-icon icon="solar:download-minimalistic-bold"></iconify-icon> CSV
@@ -877,6 +881,7 @@
       <table>
         <thead>
           <tr>
+            <th style="width:38px"><input type="checkbox" class="ipchk" id="c-chk-all"></th>
             <th>이름</th>
             <th>연락처</th>
             <th>이메일</th>
@@ -889,7 +894,7 @@
           </tr>
         </thead>
         <tbody id="table-body">
-          <tr class="loading-row"><td colspan="9">불러오는 중...</td></tr>
+          <tr class="loading-row"><td colspan="10">불러오는 중...</td></tr>
         </tbody>
       </table>
     </div>
@@ -1393,31 +1398,69 @@ document.addEventListener('change', e => {
   if (e.target && ['opt-auto', 'opt-notify', 'page-size'].includes(e.target.id)) savePrefs();
 });
 
-// ── 최근 상담 신청 복사 ──
-async function copyLatest() {
-  const rows = getVisible();
-  if (!rows.length) { alert('복사할 신청 내역이 없습니다.'); return; }
-  const r = rows[0];
-  const { visit, birth, extra, body } = parseVisit(r.message);
-  const txt = [
-    '[' + (r.source || '현장 미확인') + '] 상담 신청',
-    '성함 : ' + (r.name || '-'),
-    '연락처 : ' + (r.phone || '-'),
-    r.unit_type ? '관심 타입 : ' + r.unit_type : '',
-    birth ? '생년월일 : ' + birth : '',
-    visit ? '희망 방문 : ' + visit : '',
-    extra ? '방문 인원·수단 : ' + extra : '',
-    body ? '문의 내용 : ' + body : '',
-    '접수 : ' + fmtDateTime(r.created_at)
-  ].filter(Boolean).join('\n');
+// ══════════════════════════════════════════
+// 상담 신청 복사 (선택 / 최근)
+// 항목은 이름·전화번호·생년월일·내용·방문예약·신청시간 여섯 가지로 고정한다.
+// ══════════════════════════════════════════
+function consultText(r) {
+  const { visit, birth, body } = parseVisit(r.message);
+  return [
+    '이름 : ' + (r.name || '-'),
+    '전화번호 : ' + (r.phone || '-'),
+    '생년월일 : ' + (birth || '-'),
+    '내용 : ' + (body || '-'),
+    '방문예약 : ' + (visit || '-'),
+    '신청시간 : ' + fmtDateTime(r.created_at)
+  ].join('\n');
+}
 
+async function putClipboard(txt, msg) {
   try {
     await navigator.clipboard.writeText(txt);
-    alert('가장 최근 신청을 복사했습니다.\n\n' + txt);
+    alert(msg + '\n\n' + txt);
   } catch (e) {
     prompt('아래 내용을 복사하세요', txt);
   }
 }
+
+function pickedIds() {
+  return [...document.querySelectorAll('.c-row-chk')].filter(c => c.checked).map(c => c.value);
+}
+
+function syncPick() {
+  const ids = pickedIds();
+  const btn = document.getElementById('copy-pick-btn');
+  const label = document.getElementById('copy-pick-label');
+  if (btn) btn.disabled = !ids.length;
+  if (label) label.textContent = ids.length ? `선택 복사 ${ids.length}` : '선택 복사';
+  const all = document.querySelectorAll('.c-row-chk').length;
+  const chkAll = document.getElementById('c-chk-all');
+  if (chkAll) chkAll.checked = all > 0 && ids.length === all;
+}
+
+async function copyPicked() {
+  const ids = pickedIds();
+  if (!ids.length) return;
+  // 화면에 보이는 순서(최신순) 그대로 담는다
+  const rows = getVisible().filter(r => ids.includes(r.id));
+  const txt = rows.map(consultText).join('\n\n──────────\n\n');
+  await putClipboard(txt, `${rows.length}건을 복사했습니다.`);
+}
+
+async function copyLatest() {
+  const rows = getVisible();
+  if (!rows.length) { alert('복사할 신청 내역이 없습니다.'); return; }
+  await putClipboard(consultText(rows[0]), '가장 최근 신청을 복사했습니다.');
+}
+
+// 체크박스는 위임으로 받는다
+document.getElementById('table-body').addEventListener('change', e => {
+  if (e.target.classList.contains('c-row-chk')) syncPick();
+});
+document.getElementById('c-chk-all').addEventListener('click', e => {
+  document.querySelectorAll('.c-row-chk').forEach(c => { c.checked = e.target.checked; });
+  syncPick();
+});
 
 function showLoginError(msg) {
   const el = document.getElementById('login-error');
@@ -1462,7 +1505,7 @@ async function checkSession() {
 // ══════════════════════════════════════════
 async function loadData() {
   const tbody = document.getElementById('table-body');
-  tbody.innerHTML = '<tr class="loading-row"><td colspan="9">불러오는 중...</td></tr>';
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="10">불러오는 중...</td></tr>';
 
   const { data, error } = await _sb
     .from('consultations')
@@ -1470,7 +1513,7 @@ async function loadData() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="9">오류: ${error.message}<br><small style="color:var(--text-dim);margin-top:8px;display:block;">로그인 세션이 만료되었을 수 있습니다. 새로고침 후 다시 로그인해 주세요.</small></td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="10">오류: ${error.message}<br><small style="color:var(--text-dim);margin-top:8px;display:block;">로그인 세션이 만료되었을 수 있습니다. 새로고침 후 다시 로그인해 주세요.</small></td></tr>`;
     return;
   }
 
@@ -1701,7 +1744,7 @@ function renderTable() {
   const all = getVisible();
   const tbody = document.getElementById('table-body');
   if (!all.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">조건에 맞는 신청 내역이 없습니다.</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="10">조건에 맞는 신청 내역이 없습니다.</td></tr>';
     renderPager(0);
     return;
   }
@@ -1737,6 +1780,7 @@ function renderTable() {
       : `<button class="action-btn revert" onclick="changeStatus('${r.id}','pending')">대기로 변경</button>`;
 
     return `<tr>
+      <td><input type="checkbox" class="ipchk c-row-chk" value="${esc(r.id)}"></td>
       <td data-label="이름"><strong>${esc(r.name)}</strong>${dupMark}${memoMark}</td>
       <td data-label="연락처"><a class="tel-link" href="tel:${esc(r.phone)}">${esc(r.phone)}</a></td>
       <td data-label="이메일" style="color:var(--text-dim)">${esc(r.email||'—')}</td>
@@ -1754,6 +1798,7 @@ function renderTable() {
       </td>
     </tr>`;
   }).join('');
+  syncPick();
 }
 
 // ── CSV 내보내기 (현재 필터된 목록 그대로) ──
