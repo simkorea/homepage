@@ -950,10 +950,6 @@
         <strong>네이버 광고 시스템 → 캠페인 → 노출 제한 IP</strong>에 등록하세요.
       </p>
 
-    </div><!-- /tab-fraud -->
-
-
-
       <div style="margin-top:26px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
         <div>
           <h3 style="font-size:15px;font-weight:700;">사이트 접속차단 목록</h3>
@@ -972,6 +968,11 @@
           <tbody id="blk-tbody"><tr class="empty-row"><td colspan="5">불러오는 중…</td></tr></tbody>
         </table>
       </div>
+
+    </div><!-- /tab-fraud -->
+
+
+
 
     <!-- ── 탭: 방문 캘린더 ── -->
     <div class="tab-content" id="tab-calendar">
@@ -1705,8 +1706,9 @@ function renderCalendar() {
     const dayHead = list.length
       ? `<div class="cal-d cnt">${c.d}<span class="n">${list.length}</span></div>`
       : `<div class="cal-d">${c.d}</div>`;
-    const clickable = list.length ? ` has" onclick="openDay(${y},${m},${c.d})` : '"';
-    html += `<div class="cal-cell${isToday ? ' today' : ''}${clickable}>${dayHead}${shown}${more}</div>`;
+    const cls = 'cal-cell' + (isToday ? ' today' : '') + (list.length ? ' has' : '');
+    const onclick = list.length ? ` onclick="openDay(${y},${m},${c.d})"` : '';
+    html += `<div class="${cls}"${onclick}>${dayHead}${shown}${more}</div>`;
   }
 
   document.getElementById('cal-grid').innerHTML = html;
