@@ -163,6 +163,24 @@
   tr.blocked-row { background:rgba(248,113,113,.07); }
   .blk-tag { display:inline-block; padding:2px 8px; border-radius:20px; font-size:10.5px; font-weight:700;
              background:var(--red-dim); color:var(--red); margin-left:6px; }
+  /* ── 페이지네이션 ── */
+  .page-size { padding:9px 12px; border-radius:9px; background:var(--surface2);
+               border:1px solid var(--border); color:var(--text);
+               font-family:inherit; font-size:13px; cursor:pointer; }
+  .page-size:focus { outline:none; border-color:var(--gold); }
+  .pager { display:flex; align-items:center; justify-content:space-between; gap:14px;
+           flex-wrap:wrap; margin-top:16px; }
+  .pager-info { font-size:12.5px; color:var(--text-dim); }
+  .pager-info b { color:var(--text); }
+  .pager-btns { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+  .pg { min-width:34px; height:34px; padding:0 9px; border-radius:8px; cursor:pointer;
+        background:var(--glass); border:1px solid var(--border); color:var(--text-dim);
+        font-family:inherit; font-size:13px; font-variant-numeric:tabular-nums;
+        transition:background-color .18s, color .18s, border-color .18s; }
+  .pg:hover:not(:disabled) { background:var(--glass2); color:var(--text); }
+  .pg.on { background:var(--gold); border-color:var(--gold); color:#1a1a1d; font-weight:700; }
+  .pg:disabled { opacity:.3; cursor:not-allowed; }
+  .pg-gap { color:var(--text-dim); padding:0 2px; font-size:13px; }
   .vis-grid { display:grid; gap:12px; grid-template-columns:repeat(4,1fr); margin-bottom:20px; }
   @media (max-width:900px){ .vis-grid{ grid-template-columns:repeat(2,1fr) } }
   .vis-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px 18px 20px; position:relative; }
@@ -806,6 +824,12 @@
         <button class="filter-btn" id="filter-done" onclick="setFilter('done')">처리 완료</button>
       </div>
       <div class="toolbar-right">
+        <select class="page-size" id="page-size" onchange="setPageSize(this.value)" aria-label="한 페이지에 보여줄 개수">
+          <option value="20">20개씩 보기</option>
+          <option value="50">50개씩 보기</option>
+          <option value="100">100개씩 보기</option>
+          <option value="all">전체 보기</option>
+        </select>
         <label class="search-box">
           <iconify-icon icon="solar:magnifer-linear"></iconify-icon>
           <input id="search-input" class="search-input" type="text" placeholder="이름·연락처 검색"
@@ -836,6 +860,11 @@
           <tr class="loading-row"><td colspan="9">불러오는 중...</td></tr>
         </tbody>
       </table>
+    </div>
+
+    <div class="pager" id="pager">
+      <div class="pager-info" id="pager-info"></div>
+      <div class="pager-btns" id="pager-btns"></div>
     </div>
 
     </div><!-- /tab-consult -->
@@ -1336,9 +1365,55 @@ function typeOf(t) { return ({ '84': '84㎡', '59': '59㎡' })[t] || t || '—';
 function jsStr(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
 
 // ── 필터 파이프라인 ──
+let pageSize = 20;      // 한 화면에 보여줄 건수
+let currentPage = 1;
+
+function setPageSize(v) {
+  pageSize = (v === 'all') ? 'all' : parseInt(v, 10);
+  currentPage = 1;
+  renderTable();
+}
+function goPage(p) {
+  currentPage = p;
+  renderTable();
+  document.getElementById('tab-consult').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// 목록·필터가 바뀌면 1페이지로 되돌린다
+function resetPage() { currentPage = 1; }
+
+function renderPager(total) {
+  const info = document.getElementById('pager-info');
+  const btns = document.getElementById('pager-btns');
+  if (pageSize === 'all' || total === 0) {
+    info.textContent = total ? `전체 ${total.toLocaleString('ko-KR')}건` : '';
+    btns.innerHTML = '';
+    return;
+  }
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  if (currentPage > pages) currentPage = pages;
+  const from = (currentPage - 1) * pageSize + 1;
+  const to = Math.min(currentPage * pageSize, total);
+  info.innerHTML = `전체 <b>${total.toLocaleString('ko-KR')}</b>건 중 <b>${from}–${to}</b> · ${currentPage}/${pages} 페이지`;
+
+  // 현재 페이지 주변 ±2 만 숫자로, 나머지는 … 로 접는다
+  const nums = [];
+  for (let p = 1; p <= pages; p++) {
+    if (p === 1 || p === pages || Math.abs(p - currentPage) <= 2) nums.push(p);
+    else if (nums[nums.length - 1] !== '…') nums.push('…');
+  }
+  btns.innerHTML =
+    `<button class="pg" ${currentPage === 1 ? 'disabled' : ''} data-pg="${currentPage - 1}">‹ 이전</button>` +
+    nums.map(p => p === '…'
+      ? '<span class="pg-gap">…</span>'
+      : `<button class="pg ${p === currentPage ? 'on' : ''}" data-pg="${p}">${p}</button>`).join('') +
+    `<button class="pg" ${currentPage === pages ? 'disabled' : ''} data-pg="${currentPage + 1}">다음 ›</button>`;
+}
+
 let currentPeriod = 'all';
 function setPeriod(p) {
   currentPeriod = p;
+  resetPage();
   document.querySelectorAll('#period-filter .filter-btn').forEach((b, i) => {
     b.classList.toggle('active', ['all', 'today', '7', '30'][i] === p);
   });
@@ -1399,6 +1474,7 @@ function buildSourceFilter() {
 
 function setSource(s) {
   currentSource = s;
+  resetPage();
   buildSourceFilter();
   updateStats();
   renderTable();
@@ -1406,6 +1482,7 @@ function setSource(s) {
 
 function onSearch(v) {
   currentSearch = v;
+  resetPage();
   updateStats();
   renderTable();
 }
@@ -1421,6 +1498,7 @@ function updateStats() {
 
 function setFilter(f) {
   currentFilter = f;
+  resetPage();
   ['all','pending','done'].forEach(k => {
     document.getElementById('filter-' + k).classList.toggle('active', k === f);
   });
@@ -1429,12 +1507,18 @@ function setFilter(f) {
 
 function renderTable() {
   const DUP = dupPhones();
-  const rows = getVisible();
+  const all = getVisible();
   const tbody = document.getElementById('table-body');
-  if (!rows.length) {
+  if (!all.length) {
     tbody.innerHTML = '<tr class="empty-row"><td colspan="9">조건에 맞는 신청 내역이 없습니다.</td></tr>';
+    renderPager(0);
     return;
   }
+
+  renderPager(all.length);   // currentPage 보정이 여기서 일어난다
+  const rows = (pageSize === 'all')
+    ? all
+    : all.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   tbody.innerHTML = rows.map(r => {
     const isPending = r.status !== 'done';
@@ -1554,7 +1638,7 @@ function openDetail(id) {
 
   document.querySelector('#detail-modal .modal-title').textContent = '상담 신청 상세';
   const backBtn = lastDayView
-    ? `<button class="day-back" onclick="openDay(${lastDayView.y},${lastDayView.m},${lastDayView.d})">&lsaquo; 그날 목록으로</button>`
+    ? `<button class="day-back" data-back="1">&lsaquo; 그날 목록으로</button>`
     : '';
   document.getElementById('modal-content').innerHTML = backBtn + `
     <div class="detail-row"><div class="detail-label">사이트</div><div class="detail-value">${sourceBadgeHtml(r.source)}</div></div>
@@ -1593,6 +1677,16 @@ async function saveDetail(id) {
   setTimeout(() => { const e = document.getElementById('d-saved'); if (e) e.textContent = ''; }, 2500);
   renderTable();
 }
+
+// 모달 안 클릭도 위임으로 받는다
+document.getElementById('modal-content').addEventListener('click', e => {
+  if (e.target.closest('[data-back]') && lastDayView) {
+    openDay(lastDayView.y, lastDayView.m, lastDayView.d);
+    return;
+  }
+  const row = e.target.closest('.day-row');
+  if (row) openDetail(row.dataset.detail);
+});
 
 function closeModal() {
   lastDayView = null;
@@ -1697,21 +1791,22 @@ function renderCalendar() {
     const isToday = (new Date(y, m, c.d).getTime() === today.getTime());
     const list = byDay.get(c.d) || [];
     const shown = list.slice(0, 3).map(({ r, hm }) =>
-      `<button class="cal-ev" onclick="event.stopPropagation();openDetail('${r.id}')" title="${esc(r.name)} · ${esc(r.phone)}">
+      `<button class="cal-ev" data-detail="${esc(r.id)}" title="${esc(r.name)} · ${esc(r.phone)}">
          <b>${esc(r.name)}</b><span>${hm ? hm + ' · ' : ''}${esc((r.source || '').slice(0, 10))}</span>
        </button>`).join('');
     const more = list.length > 3
-      ? `<button class="cal-more" onclick="event.stopPropagation();openDay(${y},${m},${c.d})">+${list.length - 3}건 더 보기</button>`
+      ? `<button class="cal-more" data-day="${c.d}">+${list.length - 3}건 더 보기</button>`
       : '';
     const dayHead = list.length
       ? `<div class="cal-d cnt">${c.d}<span class="n">${list.length}</span></div>`
       : `<div class="cal-d">${c.d}</div>`;
     const cls = 'cal-cell' + (isToday ? ' today' : '') + (list.length ? ' has' : '');
-    const onclick = list.length ? ` onclick="openDay(${y},${m},${c.d})"` : '';
-    html += `<div class="${cls}"${onclick}>${dayHead}${shown}${more}</div>`;
+    const dayAttr = list.length ? ` data-day="${c.d}"` : '';
+    html += `<div class="${cls}"${dayAttr}>${dayHead}${shown}${more}</div>`;
   }
 
   document.getElementById('cal-grid').innerHTML = html;
+  calGridYM = { y, m };
   document.getElementById('cal-note').textContent =
     y + '년 ' + (m + 1) + '월 방문 예약 ' + total + '건' +
     (total === 0 ? ' · 희망 방문일이 적힌 신청이 이 달에는 없습니다.' : '');
@@ -1740,7 +1835,7 @@ function openDay(y, m, d) {
   document.getElementById('modal-content').innerHTML =
     (list.length
       ? list.map(({ r, hm }) => `
-        <div class="day-row" onclick="openDetail('${r.id}')">
+        <div class="day-row" data-detail="${esc(r.id)}">
           <div class="day-t${hm ? '' : ' none'}">${hm || '시간 미정'}</div>
           <div>
             <span class="day-n">${esc(r.name)}</span>
@@ -1755,6 +1850,17 @@ function openDay(y, m, d) {
   lastDayView = { y, m, d };
 }
 let lastDayView = null;
+
+let calGridYM = null;
+
+// 캘린더 클릭은 한 곳에서 받는다 (일정 → 상세, 그 외 → 그날 목록)
+document.getElementById('cal-grid').addEventListener('click', e => {
+  const ev = e.target.closest('.cal-ev');
+  if (ev) { openDetail(ev.dataset.detail); return; }
+  const holder = e.target.closest('[data-day]');
+  if (!holder || !calGridYM) return;
+  openDay(calGridYM.y, calGridYM.m, parseInt(holder.dataset.day, 10));
+});
 
 document.getElementById('cal-prev').addEventListener('click', () => {
   calYM.m--; if (calYM.m < 0) { calYM.m = 11; calYM.y--; } renderCalendar();
@@ -2026,6 +2132,14 @@ async function loadVisitorData() {
 
 document.getElementById('vis-reload').addEventListener('click', loadVisitorData);
 
+// 페이지 버튼 — 인라인 onclick 대신 위임으로 처리한다
+document.getElementById('pager-btns').addEventListener('click', e => {
+  const b = e.target.closest('.pg');
+  if (!b || b.disabled) return;
+  const p = parseInt(b.dataset.pg, 10);
+  if (p >= 1) goPage(p);
+});
+
 // ══════════════════════════════════════════
 // 검색어 분석
 // ══════════════════════════════════════════
@@ -2177,7 +2291,7 @@ async function loadFraudData() {
     const dwell = r.avg_dwell_ms == null ? '—' : (r.avg_dwell_ms / 1000).toFixed(1) + '초';
     const isBlk = blockedIps.has(r.ip);
     return `<tr class="${isBlk ? 'blocked-row' : ''}">
-      <td><input type="checkbox" class="ipchk ip-row-chk" value="${esc(r.ip)}" onclick="syncSel()"></td>
+      <td><input type="checkbox" class="ipchk ip-row-chk" value="${esc(r.ip)}"></td>
       <td><strong style="font-family:monospace;letter-spacing:0.04em;">${esc(r.ip)}</strong>${isBlk ? '<span class="blk-tag">차단중</span>' : ''}</td>
       <td><span class="ip-count-badge ${danger ? '' : 'warn'}">${r.score}점</span></td>
       <td>${r.clicks}회</td>
@@ -2196,6 +2310,10 @@ async function loadFraudData() {
 // IP 선택 · 사이트 접속차단
 // ══════════════════════════════════════════
 let blockedIps = new Set();
+
+document.getElementById('fraud-table-body').addEventListener('change', e => {
+  if (e.target.classList.contains('ip-row-chk')) syncSel();
+});
 
 function selAll(on) {
   document.querySelectorAll('.ip-row-chk').forEach(c => { c.checked = on; });
@@ -2274,11 +2392,16 @@ async function loadBlockList() {
           <td style="font-size:12px;color:var(--text-dim)">${esc(r.reason || '—')}</td>
           <td style="font-size:12px">${fmtDateTime(r.until)}</td>
           <td style="font-size:12px;color:var(--text-dim)">${fmtDateTime(r.created_at)}</td>
-          <td><button class="copy-btn" onclick="unblockIp('${esc(r.ip)}')">해제</button></td>
+          <td><button class="copy-btn" data-unblock="${esc(r.ip)}">해제</button></td>
         </tr>`;
       }).join('')
     : '<tr class="empty-row"><td colspan="5">차단된 IP가 없습니다.</td></tr>';
 }
+
+document.getElementById('blk-tbody').addEventListener('click', e => {
+  const b = e.target.closest('[data-unblock]');
+  if (b) unblockIp(b.dataset.unblock);
+});
 
 async function unblockIp(ip) {
   if (!confirm(`${ip} 의 접속 차단을 해제할까요?`)) return;
