@@ -59,6 +59,45 @@
       .catch(function () { /* 판정 실패 시 절대 막지 않는다 */ });
   })();
 
+  // ── 0-1) 관리자가 직접 지정한 IP 차단 ────────────────────────
+  // 반복접속 자동판정과 별개로, 관리자 페이지에서 지정한 기간 동안 막는다.
+  // IP는 서버가 요청 헤더에서 직접 읽으므로 방문자가 위조할 수 없다.
+  (function manualBlock() {
+    post('check_ip_block', {})
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (result) {
+        if (result && result.blocked) showManualBlockOverlay(result.until);
+      })
+      .catch(function () { /* 판정 실패 시 절대 막지 않는다 */ });
+  })();
+
+  function showManualBlockOverlay(until) {
+    try {
+      var when = '';
+      if (until) {
+        var d = new Date(until);
+        if (!isNaN(d)) {
+          when = d.getFullYear() + '.' + ('0' + (d.getMonth() + 1)).slice(-2) + '.' +
+                 ('0' + d.getDate()).slice(-2) + ' ' + ('0' + d.getHours()).slice(-2) + ':' +
+                 ('0' + d.getMinutes()).slice(-2);
+        }
+      }
+      document.body.style.margin = '0';
+      var box = document.createElement('div');
+      box.style.cssText = 'position:fixed;inset:0;z-index:2147483647;' +
+        'background:#111827;color:#f9fafb;display:flex;align-items:center;justify-content:center;' +
+        'flex-direction:column;text-align:center;padding:32px;font-family:system-ui,-apple-system,sans-serif;';
+      box.innerHTML =
+        '<div style="font-size:36px;margin-bottom:16px;">접속이 제한되었습니다</div>' +
+        '<div style="font-size:15px;line-height:1.7;color:#d1d5db;max-width:440px;">' +
+        '비정상적인 접속 패턴이 확인되어 접속이 제한되었습니다.' +
+        (when ? '<br>제한 해제 예정 : ' + when : '') +
+        '<br><br>문의가 필요하시면 대표번호로 연락해 주세요.</div>';
+      document.body.innerHTML = '';
+      document.body.appendChild(box);
+    } catch (e) {}
+  }
+
   function showWarnBanner() {
     try {
       var bar = document.createElement('div');

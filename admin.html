@@ -144,6 +144,25 @@
   /* ── STATS ── */
 
   /* ── 방문자 통계 ── */
+  /* ── IP 선택·차단 ── */
+  .sel-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:14px 0;
+             padding:12px 14px; border-radius:10px; background:var(--surface2); border:1px solid var(--border); }
+  .sel-bar.on { border-color:var(--gold); }
+  .sel-n { font-size:13px; font-weight:700; color:var(--gold); min-width:74px; }
+  .sel-bar select, .sel-bar button { font-family:inherit; font-size:12.5px; }
+  .sel-bar select { padding:7px 10px; border-radius:7px; background:var(--surface);
+                    border:1px solid var(--border); color:var(--text); }
+  .sel-btn { padding:8px 14px; border-radius:7px; cursor:pointer; font-weight:600;
+             background:var(--glass); border:1px solid var(--border); color:var(--text);
+             transition:background-color .2s, border-color .2s; }
+  .sel-btn:hover { background:var(--glass2); }
+  .sel-btn.danger { background:var(--red-dim); border-color:rgba(248,113,113,.4); color:var(--red); }
+  .sel-btn.danger:hover { background:rgba(248,113,113,.24); border-color:var(--red); }
+  .sel-btn:disabled { opacity:.4; cursor:not-allowed; }
+  .ipchk { width:16px; height:16px; accent-color:var(--gold); cursor:pointer; }
+  tr.blocked-row { background:rgba(248,113,113,.07); }
+  .blk-tag { display:inline-block; padding:2px 8px; border-radius:20px; font-size:10.5px; font-weight:700;
+             background:var(--red-dim); color:var(--red); margin-left:6px; }
   .vis-grid { display:grid; gap:12px; grid-template-columns:repeat(4,1fr); margin-bottom:20px; }
   @media (max-width:900px){ .vis-grid{ grid-template-columns:repeat(2,1fr) } }
   .vis-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px 18px 20px; position:relative; }
@@ -208,7 +227,29 @@
   .cal-ev:hover { background:rgba(201,165,90,.28); }
   .cal-ev b { display:block; font-weight:700; }
   .cal-ev span { color:var(--text-dim); font-size:10px; }
-  .cal-more { margin-top:4px; font-size:10.5px; color:var(--text-dim); }
+  .cal-more { display:block; width:100%; margin-top:4px; padding:3px 0; text-align:left;
+               background:none; border:0; cursor:pointer;
+               font-size:10.5px; color:var(--gold); font-weight:700; text-decoration:underline;
+               text-underline-offset:2px; font-family:inherit; }
+  .cal-more:hover { color:var(--text); }
+  .cal-cell.has { cursor:pointer; }
+  .cal-cell.has:hover { background:var(--surface2); }
+  .cal-d.cnt { display:flex; align-items:center; justify-content:space-between; }
+  .cal-d .n { background:var(--gold-dim); color:var(--gold); font-size:10px; font-weight:700;
+              padding:1px 6px; border-radius:20px; }
+  /* 일별 목록 */
+  .day-back { display:inline-flex; align-items:center; gap:5px; margin-bottom:12px; padding:6px 12px;
+              border-radius:7px; background:var(--glass); border:1px solid var(--border);
+              color:var(--text-dim); font-size:12px; cursor:pointer; font-family:inherit; }
+  .day-back:hover { background:var(--glass2); color:var(--text); }
+  .day-row { display:grid; grid-template-columns:64px 1fr auto; gap:12px; align-items:center;
+             padding:12px 4px; border-bottom:1px solid var(--border); cursor:pointer; }
+  .day-row:hover { background:var(--surface2); }
+  .day-t { font-size:15px; font-weight:700; color:var(--gold); font-variant-numeric:tabular-nums; }
+  .day-t.none { color:var(--text-dim); font-size:12.5px; font-weight:400; }
+  .day-n { font-size:14px; font-weight:700; }
+  .day-s { display:block; margin-top:3px; font-size:11.5px; color:var(--text-dim); }
+  .day-p { font-size:12.5px; color:var(--text-dim); font-variant-numeric:tabular-nums; }
 
   /* ── 성과 대시보드 ── */
   .perf-note { margin-top:14px; font-size:11.5px; color:var(--text-dim); line-height:1.65; }
@@ -863,10 +904,31 @@
         <pre id="naver-block-result" style="display:none;margin-top:10px;padding:10px;background:#0b0f17;border:1px solid var(--border);border-radius:8px;font-size:11px;line-height:1.6;color:var(--text-dim);max-height:260px;overflow:auto;white-space:pre-wrap;word-break:break-all;"></pre>
       </div>
 
+      <div class="sel-bar" id="sel-bar">
+        <span class="sel-n" id="sel-n">선택 0개</span>
+        <button class="sel-btn" type="button" onclick="selAll(true)">전체 선택</button>
+        <button class="sel-btn" type="button" onclick="selAll(false)">선택 해제</button>
+        <button class="sel-btn" type="button" onclick="selByScore()">70점 이상만</button>
+        <span style="width:1px;height:22px;background:var(--border);"></span>
+        <button class="sel-btn" type="button" id="sel-copy" onclick="copySelected()" disabled>선택 IP 복사</button>
+        <span style="width:1px;height:22px;background:var(--border);"></span>
+        <select id="blk-days">
+          <option value="1">1일</option>
+          <option value="3">3일</option>
+          <option value="7" selected>7일</option>
+          <option value="30">30일</option>
+          <option value="365">1년</option>
+        </select>
+        <button class="sel-btn danger" type="button" id="sel-block" onclick="blockSelected()" disabled>
+          선택 IP 사이트 접속차단
+        </button>
+      </div>
+
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
+              <th style="width:38px"><input type="checkbox" class="ipchk" id="chk-all" onclick="selAll(this.checked)"></th>
               <th>IP 주소</th>
               <th>점수</th>
               <th>클릭</th>
@@ -891,6 +953,25 @@
     </div><!-- /tab-fraud -->
 
 
+
+      <div style="margin-top:26px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div>
+          <h3 style="font-size:15px;font-weight:700;">사이트 접속차단 목록</h3>
+          <p style="font-size:12px;color:var(--text-dim);margin-top:4px;">
+            여기 등록된 IP는 우리 홈페이지 접속 시 차단 안내 화면이 뜹니다.
+            네이버 광고 노출 제한과는 별개입니다.
+          </p>
+        </div>
+        <button class="sel-btn" type="button" onclick="loadBlockList()">목록 새로고침</button>
+      </div>
+      <div class="table-wrap" style="margin-top:12px;">
+        <table>
+          <thead>
+            <tr><th>IP</th><th>사유</th><th>해제 예정</th><th>등록일</th><th style="width:90px">작업</th></tr>
+          </thead>
+          <tbody id="blk-tbody"><tr class="empty-row"><td colspan="5">불러오는 중…</td></tr></tbody>
+        </table>
+      </div>
 
     <!-- ── 탭: 방문 캘린더 ── -->
     <div class="tab-content" id="tab-calendar">
@@ -1470,7 +1551,11 @@ function openDetail(id) {
       </div></div>` + birthRow
     : '';
 
-  document.getElementById('modal-content').innerHTML = `
+  document.querySelector('#detail-modal .modal-title').textContent = '상담 신청 상세';
+  const backBtn = lastDayView
+    ? `<button class="day-back" onclick="openDay(${lastDayView.y},${lastDayView.m},${lastDayView.d})">&lsaquo; 그날 목록으로</button>`
+    : '';
+  document.getElementById('modal-content').innerHTML = backBtn + `
     <div class="detail-row"><div class="detail-label">사이트</div><div class="detail-value">${sourceBadgeHtml(r.source)}</div></div>
     <div class="detail-row"><div class="detail-label">이름</div><div class="detail-value">${esc(r.name)}</div></div>
     <div class="detail-row"><div class="detail-label">연락처</div><div class="detail-value">${esc(r.phone)}</div></div>
@@ -1509,6 +1594,8 @@ async function saveDetail(id) {
 }
 
 function closeModal() {
+  lastDayView = null;
+  document.querySelector('#detail-modal .modal-title').textContent = '상담 신청 상세';
   document.getElementById('detail-modal').classList.remove('open');
 }
 
@@ -1550,7 +1637,7 @@ function switchTab(tab) {
     document.getElementById('tab-' + t).classList.toggle('active', t === tab);
     document.getElementById('tab-' + t + '-btn').classList.toggle('active', t === tab);
   });
-  if (tab === 'fraud')   loadFraudData();
+  if (tab === 'fraud')   { loadFraudData(); loadBlockList(); }
   if (tab === 'keyword') loadKeywordData();
   if (tab === 'visitor') { loadVisitorData(); startVisitorAuto(); } else stopVisitorAuto();
   if (tab === 'calendar') renderCalendar();
@@ -1609,11 +1696,17 @@ function renderCalendar() {
     const isToday = (new Date(y, m, c.d).getTime() === today.getTime());
     const list = byDay.get(c.d) || [];
     const shown = list.slice(0, 3).map(({ r, hm }) =>
-      `<button class="cal-ev" onclick="openDetail('${r.id}')" title="${esc(r.name)} · ${esc(r.phone)}">
+      `<button class="cal-ev" onclick="event.stopPropagation();openDetail('${r.id}')" title="${esc(r.name)} · ${esc(r.phone)}">
          <b>${esc(r.name)}</b><span>${hm ? hm + ' · ' : ''}${esc((r.source || '').slice(0, 10))}</span>
        </button>`).join('');
-    const more = list.length > 3 ? `<div class="cal-more">+${list.length - 3}건 더</div>` : '';
-    html += `<div class="cal-cell${isToday ? ' today' : ''}"><div class="cal-d">${c.d}</div>${shown}${more}</div>`;
+    const more = list.length > 3
+      ? `<button class="cal-more" onclick="event.stopPropagation();openDay(${y},${m},${c.d})">+${list.length - 3}건 더 보기</button>`
+      : '';
+    const dayHead = list.length
+      ? `<div class="cal-d cnt">${c.d}<span class="n">${list.length}</span></div>`
+      : `<div class="cal-d">${c.d}</div>`;
+    const clickable = list.length ? ` has" onclick="openDay(${y},${m},${c.d})` : '"';
+    html += `<div class="cal-cell${isToday ? ' today' : ''}${clickable}>${dayHead}${shown}${more}</div>`;
   }
 
   document.getElementById('cal-grid').innerHTML = html;
@@ -1621,6 +1714,45 @@ function renderCalendar() {
     y + '년 ' + (m + 1) + '월 방문 예약 ' + total + '건' +
     (total === 0 ? ' · 희망 방문일이 적힌 신청이 이 달에는 없습니다.' : '');
 }
+
+// ── 하루치 예약을 시간순으로 펼쳐 보여준다 ──
+function openDay(y, m, d) {
+  const list = [];
+  for (const r of allData) {
+    const v = calVisitDate(r);
+    if (!v || v.y !== y || v.mo !== m || v.d !== d) continue;
+    list.push({ r, hm: v.hm });
+  }
+  // 시간 있는 것 먼저, 시간순. 시간 없는 것은 뒤로.
+  list.sort((a, b) => {
+    if (a.hm && b.hm) return a.hm.localeCompare(b.hm, undefined, { numeric: true });
+    if (a.hm) return -1;
+    if (b.hm) return 1;
+    return (a.r.name || '').localeCompare(b.r.name || '');
+  });
+
+  const dow = ['일','월','화','수','목','금','토'][new Date(y, m, d).getDay()];
+  document.querySelector('#detail-modal .modal-title').textContent =
+    `${y}. ${m + 1}. ${d}(${dow}) 방문 예약 ${list.length}건`;
+
+  document.getElementById('modal-content').innerHTML =
+    (list.length
+      ? list.map(({ r, hm }) => `
+        <div class="day-row" onclick="openDetail('${r.id}')">
+          <div class="day-t${hm ? '' : ' none'}">${hm || '시간 미정'}</div>
+          <div>
+            <span class="day-n">${esc(r.name)}</span>
+            <span class="day-s">${sourceBadgeHtml(r.source)} ${esc(typeOf(r.unit_type) || '')}</span>
+          </div>
+          <div class="day-p">${esc(r.phone || '')}</div>
+        </div>`).join('')
+      : '<p style="padding:20px 4px;color:var(--text-dim);font-size:13.5px;">이 날짜에는 방문 예약이 없습니다.</p>')
+    + `<p style="margin-top:14px;font-size:11.5px;color:var(--text-dim);">이름을 누르면 상세가 열립니다.</p>`;
+
+  document.getElementById('detail-modal').classList.add('open');
+  lastDayView = { y, m, d };
+}
+let lastDayView = null;
 
 document.getElementById('cal-prev').addEventListener('click', () => {
   calYM.m--; if (calYM.m < 0) { calYM.m = 11; calYM.y--; } renderCalendar();
@@ -2034,15 +2166,17 @@ async function loadFraudData() {
   }
 
   if (!fraudRows.length) {
-    tbody.innerHTML = `<tr class="fraud-empty"><td colspan="8">최근 ${days}일 내 의심 IP가 없습니다.</td></tr>`;
+    tbody.innerHTML = `<tr class="fraud-empty"><td colspan="9">최근 ${days}일 내 의심 IP가 없습니다.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = fraudRows.map(r => {
     const danger = r.score >= BLOCK_THRESHOLD;
     const dwell = r.avg_dwell_ms == null ? '—' : (r.avg_dwell_ms / 1000).toFixed(1) + '초';
-    return `<tr>
-      <td><strong style="font-family:monospace;letter-spacing:0.04em;">${esc(r.ip)}</strong></td>
+    const isBlk = blockedIps.has(r.ip);
+    return `<tr class="${isBlk ? 'blocked-row' : ''}">
+      <td><input type="checkbox" class="ipchk ip-row-chk" value="${esc(r.ip)}" onclick="syncSel()"></td>
+      <td><strong style="font-family:monospace;letter-spacing:0.04em;">${esc(r.ip)}</strong>${isBlk ? '<span class="blk-tag">차단중</span>' : ''}</td>
       <td><span class="ip-count-badge ${danger ? '' : 'warn'}">${r.score}점</span></td>
       <td>${r.clicks}회</td>
       <td style="font-size:12px;color:${danger ? 'var(--red)' : 'var(--text-dim)'};">${esc(r.reasons || '—')}</td>
@@ -2052,9 +2186,106 @@ async function loadFraudData() {
       <td><button class="copy-btn" onclick="copyIP('${esc(r.ip)}', this)">IP 복사</button></td>
     </tr>`;
   }).join('');
+  syncSel();
 }
 
 // 네이버 광고노출제한 관리에 그대로 붙여넣을 수 있게 줄바꿈으로만 구분한다.
+// ══════════════════════════════════════════
+// IP 선택 · 사이트 접속차단
+// ══════════════════════════════════════════
+let blockedIps = new Set();
+
+function selAll(on) {
+  document.querySelectorAll('.ip-row-chk').forEach(c => { c.checked = on; });
+  syncSel();
+}
+function selByScore() {
+  document.querySelectorAll('.ip-row-chk').forEach(c => {
+    const row = fraudRows.find(r => r.ip === c.value);
+    c.checked = !!row && row.score >= BLOCK_THRESHOLD;
+  });
+  syncSel();
+}
+function selectedIps() {
+  return [...document.querySelectorAll('.ip-row-chk')].filter(c => c.checked).map(c => c.value);
+}
+function syncSel() {
+  const ips = selectedIps();
+  document.getElementById('sel-n').textContent = `선택 ${ips.length}개`;
+  document.getElementById('sel-bar').classList.toggle('on', ips.length > 0);
+  document.getElementById('sel-copy').disabled = !ips.length;
+  document.getElementById('sel-block').disabled = !ips.length;
+  const all = document.querySelectorAll('.ip-row-chk').length;
+  const chkAll = document.getElementById('chk-all');
+  if (chkAll) chkAll.checked = all > 0 && ips.length === all;
+}
+
+async function copySelected() {
+  const ips = selectedIps();
+  if (!ips.length) return;
+  try {
+    await navigator.clipboard.writeText(ips.join('\n'));
+    alert(`${ips.length}개 IP를 복사했습니다.\n\n네이버 검색광고 → 도구 → 광고노출제한 관리에 붙여넣으세요.`);
+  } catch (e) {
+    prompt('아래 IP를 복사하세요', ips.join('\n'));
+  }
+}
+
+async function blockSelected() {
+  const ips = selectedIps();
+  if (!ips.length) return;
+  const days = parseInt(document.getElementById('blk-days').value, 10) || 7;
+  if (!confirm(`${ips.length}개 IP를 ${days}일 동안 사이트 접속 차단합니다.\n\n` +
+               `해당 IP로 홈페이지에 들어오면 차단 안내 화면이 표시됩니다.\n계속할까요?`)) return;
+
+  const until = new Date(Date.now() + days * 864e5).toISOString();
+  const rows = ips.map(ip => {
+    const r = fraudRows.find(x => x.ip === ip);
+    return { ip, until, reason: r ? `${r.score}점 · ${r.reasons || ''}`.slice(0, 120) : '수동 차단', site: r ? (r.sites || null) : null };
+  });
+
+  const btn = document.getElementById('sel-block');
+  btn.disabled = true; btn.textContent = '차단 중…';
+  const { error } = await _sb.from('ip_blocks').upsert(rows, { onConflict: 'ip' });
+  btn.disabled = false; btn.textContent = '선택 IP 사이트 접속차단';
+  if (error) { alert('차단 실패: ' + error.message); return; }
+  alert(`${ips.length}개 IP를 차단했습니다. (${days}일 후 자동 해제)`);
+  selAll(false);
+  await loadBlockList();
+  loadFraudData();
+}
+
+async function loadBlockList() {
+  const tb = document.getElementById('blk-tbody');
+  const { data, error } = await _sb.from('ip_blocks').select('*').order('created_at', { ascending: false });
+  if (error) {
+    tb.innerHTML = `<tr class="empty-row"><td colspan="5">불러오지 못했습니다: ${esc(error.message)}</td></tr>`;
+    return;
+  }
+  const now = Date.now();
+  blockedIps = new Set((data || []).filter(r => new Date(r.until).getTime() > now).map(r => r.ip));
+  tb.innerHTML = (data && data.length)
+    ? data.map(r => {
+        const live = new Date(r.until).getTime() > now;
+        return `<tr${live ? '' : ' style="opacity:.45"'}>
+          <td><strong style="font-family:monospace">${esc(r.ip)}</strong>${live ? '' : '<span style="color:var(--text-dim);font-size:11px;margin-left:6px">만료</span>'}</td>
+          <td style="font-size:12px;color:var(--text-dim)">${esc(r.reason || '—')}</td>
+          <td style="font-size:12px">${fmtDateTime(r.until)}</td>
+          <td style="font-size:12px;color:var(--text-dim)">${fmtDateTime(r.created_at)}</td>
+          <td><button class="copy-btn" onclick="unblockIp('${esc(r.ip)}')">해제</button></td>
+        </tr>`;
+      }).join('')
+    : '<tr class="empty-row"><td colspan="5">차단된 IP가 없습니다.</td></tr>';
+}
+
+async function unblockIp(ip) {
+  if (!confirm(`${ip} 의 접속 차단을 해제할까요?`)) return;
+  const { error } = await _sb.from('ip_blocks').delete().eq('ip', ip);
+  if (error) { alert('해제 실패: ' + error.message); return; }
+  await loadBlockList();
+  loadFraudData();
+}
+
 async function copyBlockList() {
   const list = fraudRows.filter(r => r.score >= BLOCK_THRESHOLD).map(r => r.ip);
   if (!list.length) {
