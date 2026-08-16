@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>관리자 | SUPANOVA</title>
+<title>관리자 | Simple 홈페이지</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
@@ -181,6 +181,23 @@
   .pg.on { background:var(--gold); border-color:var(--gold); color:#1a1a1d; font-weight:700; }
   .pg:disabled { opacity:.3; cursor:not-allowed; }
   .pg-gap { color:var(--text-dim); padding:0 2px; font-size:13px; }
+  .who { margin-left:12px; font-size:12.5px; font-weight:600; color:var(--gold); }
+  .who .role { margin-left:6px; padding:2px 8px; border-radius:20px; font-size:10.5px;
+               background:var(--gold-dim); color:var(--gold); }
+  .who .role.staff { background:var(--blue-dim); color:var(--blue); }
+  .signup-link { margin-top:14px; text-align:center; font-size:12.5px; color:var(--text-dim); }
+  .signup-link button { background:none; border:0; color:var(--gold); cursor:pointer;
+                        font-family:inherit; font-size:12.5px; text-decoration:underline; }
+  .pend-card { background:var(--surface); border:1px solid var(--border); border-radius:14px;
+               padding:16px 18px; margin-bottom:20px; }
+  .pend-card h3 { font-size:14.5px; font-weight:700; margin-bottom:4px; }
+  .pend-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+              padding:11px 0; border-bottom:1px solid var(--border); }
+  .pend-row:last-child { border-bottom:0; }
+  .pend-row .em { font-size:13.5px; font-weight:600; flex:1 1 200px; }
+  .pend-row input { padding:7px 10px; border-radius:7px; background:var(--surface2);
+                    border:1px solid var(--border); color:var(--text); font-family:inherit; font-size:12.5px; width:140px; }
+  .done-by { display:block; margin-top:3px; font-size:10.5px; color:var(--text-dim); }
   .vis-grid { display:grid; gap:12px; grid-template-columns:repeat(4,1fr); margin-bottom:20px; }
   @media (max-width:900px){ .vis-grid{ grid-template-columns:repeat(2,1fr) } }
   .vis-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px 18px 20px; position:relative; }
@@ -716,7 +733,7 @@
 <!-- ── LOGIN GATE ── -->
 <div id="login-gate">
   <div class="login-card">
-    <div class="login-logo">SUPANOVA</div>
+    <div class="login-logo">SIMPLE</div>
     <div class="login-title">관리자 로그인</div>
     <input type="email" id="email-input" class="login-input" placeholder="이메일" autocomplete="username"
            onkeydown="if(event.key==='Enter') document.getElementById('pw-input').focus()">
@@ -724,13 +741,17 @@
            onkeydown="if(event.key==='Enter') doLogin()">
     <button class="login-btn" id="login-btn" onclick="doLogin()">로그인</button>
     <div class="login-error" id="login-error">이메일 또는 비밀번호가 올바르지 않습니다.</div>
+    <div class="signup-link">
+      관리자 계정이 없으신가요? <button type="button" onclick="doSignup()">가입 요청</button><br>
+      <span style="font-size:11.5px;">가입 후 대표 관리자의 승인을 받아야 이용할 수 있습니다.</span>
+    </div>
   </div>
 </div>
 
 <!-- ── ADMIN PANEL ── -->
 <div id="admin-panel">
   <div class="topbar">
-    <div class="topbar-brand">SUPANOVA · 관리자</div>
+    <div class="topbar-brand">Simple 홈페이지 관리자<span id="who" class="who"></span></div>
     <div class="topbar-right">
       <span id="topbar-time" style="font-size:12px;color:var(--text-dim);"></span>
       <button class="logout-btn" onclick="doLogout()">로그아웃</button>
@@ -766,6 +787,14 @@
         검색어 분석
         <span class="tab-badge" id="keyword-badge">0</span>
       </button>
+    </div>
+
+    <div class="pend-card" id="pend-card" style="display:none;">
+      <h3>승인 대기 중인 관리자</h3>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:6px;">
+        별명을 입력하고 승인하면 바로 이용할 수 있습니다. 하부 관리자는 삭제 기능을 쓸 수 없습니다.
+      </p>
+      <div id="pend-list"></div>
     </div>
 
     <!-- ── 탭: 상담 신청 ── -->
@@ -835,6 +864,9 @@
           <input id="search-input" class="search-input" type="text" placeholder="이름·연락처 검색"
                  oninput="onSearch(this.value)" autocomplete="off">
         </label>
+        <button class="csv-btn" onclick="copyLatest()" title="가장 최근 상담 신청 내용을 복사합니다">
+          <iconify-icon icon="solar:copy-bold"></iconify-icon> 최근 신청 복사
+        </button>
         <button class="csv-btn" onclick="exportCSV()">
           <iconify-icon icon="solar:download-minimalistic-bold"></iconify-icon> CSV
         </button>
@@ -1217,15 +1249,174 @@ let allData = [];
 let currentFilter = 'all';     // 상태 필터: all | pending | done
 let currentSource = 'all';     // 현장 필터: all | <source값>
 let currentSearch = '';        // 이름·연락처 검색어
+let me = null;                 // { id, email, nickname, role, approved }
+const OWNER_EMAIL = 'xinkorea@naver.com';
+
+function isOwner() { return !!me && (me.role === 'owner' || me.email === OWNER_EMAIL); }
+function myName()  { return (me && (me.nickname || me.email)) || '관리자'; }
 
 // ══════════════════════════════════════════
 // AUTH
 // ══════════════════════════════════════════
-function enterAdmin() {
+async function enterAdmin() {
+  // 로그인한 사람이 승인된 관리자인지 확인한다
+  const { data: { user } } = await _sb.auth.getUser();
+  if (!user) return;
+
+  let { data: row } = await _sb.from('admin_users').select('*').eq('id', user.id).maybeSingle();
+
+  // 대표 관리자는 행이 없어도 자동으로 만들어 준다
+  if (!row && user.email === OWNER_EMAIL) {
+    await _sb.from('admin_users').insert({
+      id: user.id, email: user.email, nickname: '대표', role: 'owner', approved: true
+    });
+    ({ data: row } = await _sb.from('admin_users').select('*').eq('id', user.id).maybeSingle());
+  }
+
+  if (!row) {
+    await _sb.auth.signOut();
+    showLoginError('가입 요청이 접수되지 않았습니다. 아래 [가입 요청]을 눌러주세요.');
+    return;
+  }
+  if (!row.approved && user.email !== OWNER_EMAIL) {
+    await _sb.auth.signOut();
+    showLoginError('아직 승인 대기 중입니다. 대표 관리자의 승인 후 이용할 수 있습니다.');
+    return;
+  }
+
+  me = row;
   document.getElementById('login-gate').style.display = 'none';
   document.getElementById('admin-panel').style.display = 'block';
+  document.getElementById('who').innerHTML =
+    esc(myName()) + `<span class="role ${isOwner() ? '' : 'staff'}">${isOwner() ? '대표 관리자' : '관리자'}</span>`;
+
+  restorePrefs();
   loadData();
   startClock();
+  if (isOwner()) loadPending();
+}
+
+// ── 하부 관리자 가입 요청 ──
+async function doSignup() {
+  const email = document.getElementById('email-input').value.trim();
+  const password = document.getElementById('pw-input').value;
+  if (!email || !password) {
+    showLoginError('가입할 이메일과 사용할 비밀번호를 입력한 뒤 [가입 요청]을 눌러주세요.');
+    return;
+  }
+  if (password.length < 6) { showLoginError('비밀번호는 6자 이상이어야 합니다.'); return; }
+
+  const { data, error } = await _sb.auth.signUp({ email, password });
+  if (error) { showLoginError('가입 실패: ' + error.message); return; }
+
+  // 세션이 바로 생기는 설정이면 본인 행을 만들어 둔다
+  if (data.user) {
+    await _sb.from('admin_users').insert({
+      id: data.user.id, email, role: 'staff', approved: email === OWNER_EMAIL
+    }).then(() => {}, () => {});
+  }
+  await _sb.auth.signOut();
+  alert('가입 요청이 접수되었습니다.\n대표 관리자가 승인하면 로그인할 수 있습니다.');
+}
+
+// ── 승인 대기 목록 (대표 관리자 전용) ──
+async function loadPending() {
+  const card = document.getElementById('pend-card');
+  const list = document.getElementById('pend-list');
+  const { data, error } = await _sb.from('admin_users').select('*').order('created_at');
+  if (error || !data) { card.style.display = 'none'; return; }
+
+  const pend = data.filter(r => !r.approved);
+  const staff = data.filter(r => r.approved && r.role !== 'owner');
+  if (!pend.length && !staff.length) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+
+  list.innerHTML =
+    pend.map(r => `<div class="pend-row">
+        <span class="em">${esc(r.email || '')}</span>
+        <input id="nick-${r.id}" placeholder="별명" value="${esc(r.nickname || '')}">
+        <button class="sel-btn" data-approve="${r.id}">승인</button>
+        <button class="sel-btn danger" data-reject="${r.id}">거절</button>
+      </div>`).join('') +
+    staff.map(r => `<div class="pend-row" style="opacity:.75">
+        <span class="em">${esc(r.email || '')} <span class="role staff" style="margin-left:6px">${esc(r.nickname || '별명 없음')}</span></span>
+        <input id="nick-${r.id}" placeholder="별명" value="${esc(r.nickname || '')}">
+        <button class="sel-btn" data-rename="${r.id}">별명 저장</button>
+        <button class="sel-btn danger" data-reject="${r.id}">권한 해제</button>
+      </div>`).join('');
+}
+
+document.getElementById('pend-list').addEventListener('click', async e => {
+  const ap = e.target.closest('[data-approve]');
+  const rn = e.target.closest('[data-rename]');
+  const rj = e.target.closest('[data-reject]');
+  if (ap || rn) {
+    const id = (ap || rn).dataset.approve || (ap || rn).dataset.rename;
+    const nick = document.getElementById('nick-' + id).value.trim();
+    if (!nick) { alert('별명을 입력해 주세요.'); return; }
+    const patch = rn ? { nickname: nick } : { nickname: nick, approved: true };
+    const { error } = await _sb.from('admin_users').update(patch).eq('id', id);
+    if (error) { alert('처리 실패: ' + error.message); return; }
+    loadPending();
+    return;
+  }
+  if (rj) {
+    if (!confirm('이 관리자의 접근 권한을 해제할까요?')) return;
+    const { error } = await _sb.from('admin_users').update({ approved: false }).eq('id', rj.dataset.reject);
+    if (error) { alert('처리 실패: ' + error.message); return; }
+    loadPending();
+  }
+});
+
+// ── 화면 설정 저장 (자동 새로고침 · 알림) ──
+const PREF_KEY = 'simple_admin_prefs';
+function savePrefs() {
+  try {
+    localStorage.setItem(PREF_KEY, JSON.stringify({
+      auto: document.getElementById('opt-auto').checked,
+      notify: document.getElementById('opt-notify').checked,
+      pageSize: (document.getElementById('page-size') || {}).value
+    }));
+  } catch (e) {}
+}
+function restorePrefs() {
+  let p = {};
+  try { p = JSON.parse(localStorage.getItem(PREF_KEY) || '{}'); } catch (e) {}
+  if (typeof p.auto === 'boolean') document.getElementById('opt-auto').checked = p.auto;
+  if (typeof p.notify === 'boolean') document.getElementById('opt-notify').checked = p.notify;
+  if (p.pageSize) {
+    const sel = document.getElementById('page-size');
+    if (sel) { sel.value = p.pageSize; pageSize = (p.pageSize === 'all') ? 'all' : parseInt(p.pageSize, 10); }
+  }
+}
+document.addEventListener('change', e => {
+  if (e.target && ['opt-auto', 'opt-notify', 'page-size'].includes(e.target.id)) savePrefs();
+});
+
+// ── 최근 상담 신청 복사 ──
+async function copyLatest() {
+  const rows = getVisible();
+  if (!rows.length) { alert('복사할 신청 내역이 없습니다.'); return; }
+  const r = rows[0];
+  const { visit, birth, extra, body } = parseVisit(r.message);
+  const txt = [
+    '[' + (r.source || '현장 미확인') + '] 상담 신청',
+    '성함 : ' + (r.name || '-'),
+    '연락처 : ' + (r.phone || '-'),
+    r.unit_type ? '관심 타입 : ' + r.unit_type : '',
+    birth ? '생년월일 : ' + birth : '',
+    visit ? '희망 방문 : ' + visit : '',
+    extra ? '방문 인원·수단 : ' + extra : '',
+    body ? '문의 내용 : ' + body : '',
+    '접수 : ' + fmtDateTime(r.created_at)
+  ].filter(Boolean).join('\n');
+
+  try {
+    await navigator.clipboard.writeText(txt);
+    alert('가장 최근 신청을 복사했습니다.\n\n' + txt);
+  } catch (e) {
+    prompt('아래 내용을 복사하세요', txt);
+  }
 }
 
 function showLoginError(msg) {
@@ -1524,7 +1715,8 @@ function renderTable() {
     const isPending = r.status !== 'done';
     const badge = isPending
       ? '<span class="badge badge-pending">대기 중</span>'
-      : '<span class="badge badge-done">완료</span>';
+      : '<span class="badge badge-done">완료</span>' +
+        (r.done_by ? `<span class="done-by">${esc(r.done_by)} 처리</span>` : '');
     const { visit } = parseVisit(r.message);
     const _dupKey = (r.phone || '').replace(/\D/g, '');
     const _dupN = _dupKey ? (DUP.get(_dupKey) || 0) : 0;
@@ -1557,7 +1749,7 @@ function renderTable() {
         <div class="actions-cell">
           <button class="action-btn" onclick="openDetail('${r.id}')">상세</button>
           ${actionBtn}
-          <button class="action-btn del" onclick="deleteRow('${r.id}')">삭제</button>
+          ${isOwner() ? `<button class="action-btn del" onclick="deleteRow('${r.id}')">삭제</button>` : ''}
         </div>
       </td>
     </tr>`;
@@ -1572,14 +1764,14 @@ function csvCell(v) {
 function exportCSV() {
   const rows = getVisible();
   if (!rows.length) { alert('내보낼 내역이 없습니다.'); return; }
-  const header = ['접수일시','현장','타입','이름','연락처','이메일','희망방문','상태','문의내용'];
+  const header = ['접수일시','현장','타입','이름','연락처','이메일','희망방문','상태','처리자','문의내용'];
   const lines = [header.map(csvCell).join(',')];
   rows.forEach(r => {
     const { visit, body } = parseVisit(r.message);
     lines.push([
       fmtDateTime(r.created_at), r.source || '', typeOf(r.unit_type),
       r.name || '', r.phone || '', r.email || '',
-      visit || '', (r.status === 'done' ? '완료' : '대기'), body
+      visit || '', (r.status === 'done' ? '완료' : '대기'), r.done_by || '', body
     ].map(csvCell).join(','));
   });
   const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
@@ -1596,17 +1788,22 @@ function exportCSV() {
 // ACTIONS
 // ══════════════════════════════════════════
 async function changeStatus(id, status) {
+  // 누가 완료 처리했는지 남긴다. 대기로 되돌리면 지운다.
+  const patch = (status === 'done')
+    ? { status, done_by: myName(), done_at: new Date().toISOString() }
+    : { status, done_by: null, done_at: null };
   const { error } = await _sb
     .from('consultations')
-    .update({ status })
+    .update(patch)
     .eq('id', id);
   if (error) { alert('오류: ' + error.message); return; }
-  allData = allData.map(r => r.id === id ? { ...r, status } : r);
+  allData = allData.map(r => r.id === id ? { ...r, ...patch } : r);
   updateStats();
   renderTable();
 }
 
 async function deleteRow(id) {
+  if (!isOwner()) { alert('삭제는 대표 관리자만 할 수 있습니다.'); return; }
   if (!confirm('이 신청 내역을 삭제하시겠습니까?')) return;
   const { error } = await _sb.from('consultations').delete().eq('id', id);
   if (error) { alert('오류: ' + error.message); return; }
@@ -1648,7 +1845,9 @@ function openDetail(id) {
     <div class="detail-row"><div class="detail-label">관심 타입</div><div class="detail-value">${typeLabel}</div></div>
     ${visitRow}
     <div class="detail-row"><div class="detail-label">문의 내용</div><div class="detail-value">${esc(body||'—')}</div></div>
-    <div class="detail-row"><div class="detail-label">상태</div><div class="detail-value">${statusLabel}</div></div>
+    <div class="detail-row"><div class="detail-label">상태</div><div class="detail-value">${statusLabel}${
+      r.done_by ? ` <span style="color:var(--text-dim);font-size:12.5px">· ${esc(r.done_by)} 처리${r.done_at ? ' (' + fmtDateTime(r.done_at) + ')' : ''}</span>` : ''
+    }</div></div>
     <div class="detail-row"><div class="detail-label">접수일시</div><div class="detail-value">${dateStr}</div></div>
     <div class="detail-row" style="display:block">
       <div class="detail-label" style="margin-bottom:8px">담당자</div>
