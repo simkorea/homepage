@@ -140,6 +140,12 @@
   }
   .logout-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
   .main-wrap { padding: 32px; max-width: 1200px; margin: 0 auto; }
+  /* 상담 표가 1240px를 요구하므로, 화면이 넉넉하면 본문을 넓혀
+     가로 스크롤 없이 한 번에 보이게 한다. 좁아지면 표 안에서만 스크롤된다. */
+  @media (min-width: 1340px) { .main-wrap { max-width: 1340px; } }
+  @media (min-width: 1500px) { .main-wrap { max-width: 1460px; } }
+  @media (min-width: 1750px) { .main-wrap { max-width: 1680px; } }
+  @media (min-width: 1980px) { .main-wrap { max-width: 1860px; } }
 
   /* ── STATS ── */
 
@@ -203,7 +209,7 @@
      최소 폭을 정해 두고, 모자라면 가로 스크롤로 넘긴다. */
   .badge { white-space: nowrap; }
   @media (min-width: 769px) {
-    #tab-consult table { min-width: 1240px; }
+    #tab-consult table { min-width: 1180px; }
     #tab-consult th, #tab-consult td { white-space: nowrap; }
     #tab-consult td[data-label="이름"] { max-width: 160px; }
     #tab-consult td[data-label="이름"] strong { display: inline-block; max-width: 100%;
