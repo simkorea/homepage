@@ -198,6 +198,28 @@
   .pend-row input { padding:7px 10px; border-radius:7px; background:var(--surface2);
                     border:1px solid var(--border); color:var(--text); font-family:inherit; font-size:12.5px; width:140px; }
   .done-by { display:block; margin-top:3px; font-size:10.5px; color:var(--text-dim); }
+  /* ── 표 반응형 ──
+     열이 10개까지 늘어나면서 넓은 화면에서도 셀이 눌려 이름이 두 줄로 깨졌다.
+     최소 폭을 정해 두고, 모자라면 가로 스크롤로 넘긴다. */
+  .badge { white-space: nowrap; }
+  @media (min-width: 769px) {
+    #tab-consult table { min-width: 1240px; }
+    #tab-consult th, #tab-consult td { white-space: nowrap; }
+    #tab-consult td[data-label="이름"] { max-width: 160px; }
+    #tab-consult td[data-label="이름"] strong { display: inline-block; max-width: 100%;
+      overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+    #tab-consult td[data-label="사이트"] .badge { max-width: 170px; overflow: hidden;
+      text-overflow: ellipsis; display: inline-block; }
+    #tab-fraud table, #tab-perf table, #tab-visitor table, #tab-keyword table { min-width: 900px; }
+    #tab-fraud th, #tab-fraud td { white-space: nowrap; }
+  }
+  /* 좁은 화면에서 툴바가 서로 밀지 않게 */
+  .toolbar { flex-wrap: wrap; gap: 10px; }
+  .toolbar-right { flex-wrap: wrap; gap: 8px; }
+  @media (max-width: 1100px) {
+    .toolbar-right { width: 100%; justify-content: flex-start; }
+    .search-box { flex: 1 1 200px; }
+  }
   .vis-grid { display:grid; gap:12px; grid-template-columns:repeat(4,1fr); margin-bottom:20px; }
   @media (max-width:900px){ .vis-grid{ grid-template-columns:repeat(2,1fr) } }
   .vis-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px 18px 20px; position:relative; }
@@ -537,7 +559,13 @@
     border-radius: 12px;
     padding: 4px;
     width: fit-content;
+    max-width: 100%;
+    overflow-x: auto;              /* 탭이 6개라 좁은 화면에서 넘친다 */
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
+  .tab-nav::-webkit-scrollbar { display: none; }
+  .tab-btn { flex: 0 0 auto; }
   .tab-btn {
     padding: 8px 20px;
     border-radius: 8px;
@@ -742,8 +770,9 @@
     <button class="login-btn" id="login-btn" onclick="doLogin()">로그인</button>
     <div class="login-error" id="login-error">이메일 또는 비밀번호가 올바르지 않습니다.</div>
     <div class="signup-link">
-      관리자 계정이 없으신가요? <button type="button" onclick="doSignup()">가입 요청</button><br>
-      <span style="font-size:11.5px;">가입 후 대표 관리자의 승인을 받아야 이용할 수 있습니다.</span>
+      계정은 <b style="color:var(--gold)">대표 관리자</b>가 발급합니다.<br>
+      <span style="font-size:11.5px;">발급받은 계정으로 처음 로그인하면 승인 요청이 접수되고,<br>
+      대표 관리자가 별명을 지정해 승인하면 바로 이용할 수 있습니다.</span>
     </div>
   </div>
 </div>
@@ -1278,9 +1307,15 @@ async function enterAdmin() {
     ({ data: row } = await _sb.from('admin_users').select('*').eq('id', user.id).maybeSingle());
   }
 
+  // 대표가 발급한 계정으로 처음 로그인한 경우 — 본인 행을 만들어 승인 대기로 올린다.
+  // 이 시점엔 로그인 상태이므로 self insert 정책(id = auth.uid())이 통과한다.
   if (!row) {
+    const { error: insErr } = await _sb.from('admin_users')
+      .insert({ id: user.id, email: user.email, role: 'staff', approved: false });
     await _sb.auth.signOut();
-    showLoginError('가입 요청이 접수되지 않았습니다. 아래 [가입 요청]을 눌러주세요.');
+    showLoginError(insErr
+      ? '승인 요청 접수에 실패했습니다: ' + insErr.message
+      : '승인 요청이 접수되었습니다. 대표 관리자의 승인 후 이용할 수 있습니다.');
     return;
   }
   if (!row.approved && user.email !== OWNER_EMAIL) {
@@ -1299,29 +1334,6 @@ async function enterAdmin() {
   loadData();
   startClock();
   if (isOwner()) loadPending();
-}
-
-// ── 하부 관리자 가입 요청 ──
-async function doSignup() {
-  const email = document.getElementById('email-input').value.trim();
-  const password = document.getElementById('pw-input').value;
-  if (!email || !password) {
-    showLoginError('가입할 이메일과 사용할 비밀번호를 입력한 뒤 [가입 요청]을 눌러주세요.');
-    return;
-  }
-  if (password.length < 6) { showLoginError('비밀번호는 6자 이상이어야 합니다.'); return; }
-
-  const { data, error } = await _sb.auth.signUp({ email, password });
-  if (error) { showLoginError('가입 실패: ' + error.message); return; }
-
-  // 세션이 바로 생기는 설정이면 본인 행을 만들어 둔다
-  if (data.user) {
-    await _sb.from('admin_users').insert({
-      id: data.user.id, email, role: 'staff', approved: email === OWNER_EMAIL
-    }).then(() => {}, () => {});
-  }
-  await _sb.auth.signOut();
-  alert('가입 요청이 접수되었습니다.\n대표 관리자가 승인하면 로그인할 수 있습니다.');
 }
 
 // ── 승인 대기 목록 (대표 관리자 전용) ──
@@ -1781,7 +1793,7 @@ function renderTable() {
       : `<button class="action-btn revert" onclick="changeStatus('${r.id}','pending')">대기로 변경</button>`;
 
     return `<tr>
-      <td><input type="checkbox" class="ipchk c-row-chk" value="${esc(r.id)}"></td>
+      <td data-label="선택"><input type="checkbox" class="ipchk c-row-chk" value="${esc(r.id)}"></td>
       <td data-label="이름"><strong>${esc(r.name)}</strong>${dupMark}${memoMark}</td>
       <td data-label="연락처"><a class="tel-link" href="tel:${esc(r.phone)}">${esc(r.phone)}</a></td>
       <td data-label="이메일" style="color:var(--text-dim)">${esc(r.email||'—')}</td>
