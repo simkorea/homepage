@@ -138,6 +138,7 @@
     cursor: pointer;
     transition: all 0.2s;
   }
+  .logout-btn { white-space: nowrap; }
   .logout-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
   .main-wrap { padding: 32px; max-width: 1200px; margin: 0 auto; }
   /* 상담 표가 1240px를 요구하므로, 화면이 넉넉하면 본문을 넓혀
@@ -194,9 +195,8 @@
   .signup-link { margin-top:14px; text-align:center; font-size:12.5px; color:var(--text-dim); }
   .signup-link button { background:none; border:0; color:var(--gold); cursor:pointer;
                         font-family:inherit; font-size:12.5px; text-decoration:underline; }
-  .pend-card { background:var(--surface); border:1px solid var(--border); border-radius:14px;
-               padding:16px 18px; margin-bottom:20px; }
-  .pend-card h3 { font-size:14.5px; font-weight:700; margin-bottom:4px; }
+  /* 관리자 관리 창은 한 줄에 이메일·별명·버튼이 들어가도록 조금 넓게 */
+  #admin-modal .modal { max-width: 640px; }
   .pend-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap;
               padding:11px 0; border-bottom:1px solid var(--border); }
   .pend-row:last-child { border-bottom:0; }
@@ -204,6 +204,27 @@
   .pend-row input { padding:7px 10px; border-radius:7px; background:var(--surface2);
                     border:1px solid var(--border); color:var(--text); font-family:inherit; font-size:12.5px; width:140px; }
   .done-by { display:block; margin-top:3px; font-size:10.5px; color:var(--text-dim); }
+  /* 캘린더·일별 목록의 완료 담당자 */
+  .ev-by { display:block; margin-top:2px; font-style:normal; font-size:10px;
+           font-weight:700; color:var(--gold); }
+  .day-by { display:block; margin-top:3px; font-size:11px; color:var(--gold); font-weight:700; }
+  .day-by.wait { color:var(--text-dim); font-weight:400; }
+  /* 관리자 관리 버튼의 대기 건수 */
+  .pend-badge { display:inline-block; min-width:17px; margin-left:7px; padding:1px 6px;
+                border-radius:20px; background:var(--red); color:#fff;
+                font-size:11px; font-weight:700; line-height:1.5; text-align:center; }
+  .pend-h { font-size:12px; font-weight:700; color:var(--text-dim); letter-spacing:.06em;
+            margin:16px 0 2px; }
+  /* 내 IP 안내 */
+  .myip-bar { display:flex; align-items:center; justify-content:space-between; gap:12px;
+              flex-wrap:wrap; margin:14px 0 0; padding:11px 14px; border-radius:10px;
+              background:var(--surface2); border:1px solid var(--border);
+              font-size:12.5px; color:var(--text-dim); }
+  .myip-bar b { color:var(--text); font-family:monospace; letter-spacing:.04em; }
+  .myip-bar.warn { background:var(--red-dim); border-color:rgba(248,113,113,.45); color:var(--red); }
+  .myip-bar.warn b { color:var(--red); }
+  .my-tag { display:inline-block; padding:2px 8px; border-radius:20px; font-size:10.5px;
+            font-weight:700; background:var(--gold-dim); color:var(--gold); margin-left:6px; }
   /* ── 표 반응형 ──
      열이 10개까지 늘어나면서 넓은 화면에서도 셀이 눌려 이름이 두 줄로 깨졌다.
      최소 폭을 정해 두고, 모자라면 가로 스크롤로 넘긴다. */
@@ -647,6 +668,9 @@
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
     .main-wrap { padding: 16px; }
     .topbar { padding: 12px 16px; }
+    /* 버튼이 두 줄로 쪼개지지 않게 좁은 화면에서는 더 작게 */
+    .topbar-right { gap: 7px; }
+    .logout-btn { padding: 6px 10px; font-size: 12px; }
 
     /* 카드형 테이블 */
     .table-wrap { border-radius: 12px; overflow-x: visible; }
@@ -789,6 +813,9 @@
     <div class="topbar-brand">Simple 홈페이지 관리자<span id="who" class="who"></span></div>
     <div class="topbar-right">
       <span id="topbar-time" style="font-size:12px;color:var(--text-dim);"></span>
+      <button class="logout-btn" id="admin-mgr-btn" style="display:none;" onclick="openAdminModal()">
+        관리자 관리<span class="pend-badge" id="pend-badge" style="display:none;">0</span>
+      </button>
       <button class="logout-btn" onclick="doLogout()">로그아웃</button>
     </div>
   </div>
@@ -822,14 +849,6 @@
         검색어 분석
         <span class="tab-badge" id="keyword-badge">0</span>
       </button>
-    </div>
-
-    <div class="pend-card" id="pend-card" style="display:none;">
-      <h3>승인 대기 중인 관리자</h3>
-      <p style="font-size:12px;color:var(--text-dim);margin-bottom:6px;">
-        별명을 입력하고 승인하면 바로 이용할 수 있습니다. 하부 관리자는 삭제 기능을 쓸 수 없습니다.
-      </p>
-      <div id="pend-list"></div>
     </div>
 
     <!-- ── 탭: 상담 신청 ── -->
@@ -1004,6 +1023,8 @@
         </div>
         <pre id="naver-block-result" style="display:none;margin-top:10px;padding:10px;background:#0b0f17;border:1px solid var(--border);border-radius:8px;font-size:11px;line-height:1.6;color:var(--text-dim);max-height:260px;overflow:auto;white-space:pre-wrap;word-break:break-all;"></pre>
       </div>
+
+      <div class="myip-bar" id="myip-bar" style="display:none;"></div>
 
       <div class="sel-bar" id="sel-bar">
         <span class="sel-n" id="sel-n">선택 0개</span>
@@ -1277,6 +1298,21 @@
   </div>
 </div>
 
+<!-- ── 관리자 관리 (대표 관리자 전용) ── -->
+<div class="modal-overlay" id="admin-modal" onclick="if(event.target===this) closeAdminModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">관리자 관리</div>
+      <button class="modal-close" onclick="closeAdminModal()">✕</button>
+    </div>
+    <p style="font-size:12px;color:var(--text-dim);line-height:1.7;margin-bottom:4px;">
+      승인 대기 계정은 별명을 넣고 [승인]을 눌러야 이용할 수 있습니다.
+      하부 관리자는 삭제 기능을 쓸 수 없습니다.
+    </p>
+    <div id="pend-list"></div>
+  </div>
+</div>
+
 <script>
 // ══════════════════════════════════════════
 // CONFIG
@@ -1339,29 +1375,52 @@ async function enterAdmin() {
   restorePrefs();
   loadData();
   startClock();
-  if (isOwner()) loadPending();
+  if (isOwner()) {
+    document.getElementById('admin-mgr-btn').style.display = 'inline-block';
+    loadPending();   // 창을 열지 않아도 대기 건수 배지는 채워 둔다
+  }
 }
 
-// ── 승인 대기 목록 (대표 관리자 전용) ──
-async function loadPending() {
-  const card = document.getElementById('pend-card');
-  const list = document.getElementById('pend-list');
-  const { data, error } = await _sb.from('admin_users').select('*').order('created_at');
-  if (error || !data) { card.style.display = 'none'; return; }
+// ── 관리자 관리 창 (대표 관리자 전용) ──
+function openAdminModal() {
+  document.getElementById('admin-modal').classList.add('open');
+  loadPending();
+}
+function closeAdminModal() {
+  document.getElementById('admin-modal').classList.remove('open');
+}
 
-  const pend = data.filter(r => !r.approved);
+async function loadPending() {
+  const list  = document.getElementById('pend-list');
+  const badge = document.getElementById('pend-badge');
+  const { data, error } = await _sb.from('admin_users').select('*').order('created_at');
+  if (error || !data) {
+    list.innerHTML = `<p style="padding:16px 0;color:var(--red);font-size:13px;">불러오지 못했습니다: ${esc(error ? error.message : '알 수 없는 오류')}</p>`;
+    return;
+  }
+
+  const pend  = data.filter(r => !r.approved);
   const staff = data.filter(r => r.approved && r.role !== 'owner');
-  if (!pend.length && !staff.length) { card.style.display = 'none'; return; }
-  card.style.display = 'block';
+
+  // 대기 건수는 버튼 배지로만 알린다 (본문 상단을 차지하지 않는다)
+  badge.textContent = pend.length;
+  badge.style.display = pend.length ? 'inline-block' : 'none';
+
+  if (!pend.length && !staff.length) {
+    list.innerHTML = '<p style="padding:18px 0;color:var(--text-dim);font-size:13px;">등록된 하부 관리자가 없습니다.</p>';
+    return;
+  }
 
   list.innerHTML =
+    (pend.length ? '<div class="pend-h">승인 대기 ' + pend.length + '명</div>' : '') +
     pend.map(r => `<div class="pend-row">
         <span class="em">${esc(r.email || '')}</span>
         <input id="nick-${r.id}" placeholder="별명" value="${esc(r.nickname || '')}">
         <button class="sel-btn" data-approve="${r.id}">승인</button>
         <button class="sel-btn danger" data-reject="${r.id}">거절</button>
       </div>`).join('') +
-    staff.map(r => `<div class="pend-row" style="opacity:.75">
+    (staff.length ? '<div class="pend-h">이용 중인 관리자 ' + staff.length + '명</div>' : '') +
+    staff.map(r => `<div class="pend-row" style="opacity:.85">
         <span class="em">${esc(r.email || '')} <span class="role staff" style="margin-left:6px">${esc(r.nickname || '별명 없음')}</span></span>
         <input id="nick-${r.id}" placeholder="별명" value="${esc(r.nickname || '')}">
         <button class="sel-btn" data-rename="${r.id}">별명 저장</button>
@@ -1995,7 +2054,7 @@ function switchTab(tab) {
     document.getElementById('tab-' + t).classList.toggle('active', t === tab);
     document.getElementById('tab-' + t + '-btn').classList.toggle('active', t === tab);
   });
-  if (tab === 'fraud')   { loadFraudData(); loadBlockList(); }
+  if (tab === 'fraud')   { loadMyIp().then(() => { loadFraudData(); loadBlockList(); }); }
   if (tab === 'keyword') loadKeywordData();
   if (tab === 'visitor') { loadVisitorData(); startVisitorAuto(); } else stopVisitorAuto();
   if (tab === 'calendar') renderCalendar();
@@ -2010,6 +2069,11 @@ function switchTab(tab) {
 // 방문 예약 캘린더
 // ══════════════════════════════════════════
 let calYM = null;   // {y, m}  m: 0-11
+
+// 완료 처리한 담당자를 캘린더에서도 바로 보이게 한다
+function doneByTag(r) {
+  return (r.status === 'done' && r.done_by) ? `<i class="ev-by">✓ ${esc(r.done_by)}</i>` : '';
+}
 
 function calVisitDate(r) {
   const { visit } = parseVisit(r.message);
@@ -2054,8 +2118,8 @@ function renderCalendar() {
     const isToday = (new Date(y, m, c.d).getTime() === today.getTime());
     const list = byDay.get(c.d) || [];
     const shown = list.slice(0, 3).map(({ r, hm }) =>
-      `<button class="cal-ev" data-detail="${esc(r.id)}" title="${esc(r.name)} · ${esc(r.phone)}">
-         <b>${esc(r.name)}</b><span>${hm ? hm + ' · ' : ''}${esc((r.source || '').slice(0, 10))}</span>
+      `<button class="cal-ev" data-detail="${esc(r.id)}" title="${esc(r.name)} · ${esc(r.phone)}${r.done_by ? ' · ' + esc(r.done_by) + ' 처리' : ''}">
+         <b>${esc(r.name)}</b><span>${hm ? hm + ' · ' : ''}${esc((r.source || '').slice(0, 10))}</span>${doneByTag(r)}
        </button>`).join('');
     const more = list.length > 3
       ? `<button class="cal-more" data-day="${c.d}">+${list.length - 3}건 더 보기</button>`
@@ -2103,6 +2167,9 @@ function openDay(y, m, d) {
           <div>
             <span class="day-n">${esc(r.name)}</span>
             <span class="day-s">${sourceBadgeHtml(r.source)} ${esc(typeOf(r.unit_type) || '')}</span>
+            ${r.status === 'done'
+              ? `<span class="day-by">✓ ${esc(r.done_by || '담당자 미기록')} 처리${r.done_at ? ' · ' + fmtDateTime(r.done_at) : ''}</span>`
+              : `<span class="day-by wait">담당자 미지정 (대기)</span>`}
           </div>
           <div class="day-p">${esc(r.phone || '')}</div>
         </div>`).join('')
@@ -2553,9 +2620,10 @@ async function loadFraudData() {
     const danger = r.score >= BLOCK_THRESHOLD;
     const dwell = r.avg_dwell_ms == null ? '—' : (r.avg_dwell_ms / 1000).toFixed(1) + '초';
     const isBlk = blockedIps.has(r.ip);
+    const mine  = !!myIp && r.ip === myIp;
     return `<tr class="${isBlk ? 'blocked-row' : ''}">
-      <td><input type="checkbox" class="ipchk ip-row-chk" value="${esc(r.ip)}"></td>
-      <td><strong style="font-family:monospace;letter-spacing:0.04em;">${esc(r.ip)}</strong>${isBlk ? '<span class="blk-tag">차단중</span>' : ''}</td>
+      <td><input type="checkbox" class="ipchk ip-row-chk" value="${esc(r.ip)}"${mine ? ' disabled title="내 IP라 차단할 수 없습니다"' : ''}></td>
+      <td><strong style="font-family:monospace;letter-spacing:0.04em;">${esc(r.ip)}</strong>${mine ? '<span class="my-tag">내 IP</span>' : ''}${isBlk ? '<span class="blk-tag">차단중</span>' : ''}</td>
       <td><span class="ip-count-badge ${danger ? '' : 'warn'}">${r.score}점</span></td>
       <td>${r.clicks}회</td>
       <td style="font-size:12px;color:${danger ? 'var(--red)' : 'var(--text-dim)'};">${esc(r.reasons || '—')}</td>
@@ -2573,24 +2641,55 @@ async function loadFraudData() {
 // IP 선택 · 사이트 접속차단
 // ══════════════════════════════════════════
 let blockedIps = new Set();
+let myIp = null;   // 지금 이 관리자가 쓰는 IP — 실수로 스스로를 차단하지 않도록 지켜 둔다
+
+// 서버가 보는 요청 IP를 그대로 돌려받는다 (adguard 가 쓰는 함수와 동일)
+async function loadMyIp() {
+  try {
+    const { data, error } = await _sb.rpc('check_ip_block');
+    if (!error && data && data.ip) myIp = data.ip;
+  } catch (e) { /* 못 가져와도 나머지는 그대로 동작한다 */ }
+  renderMyIpBar();
+}
+
+function renderMyIpBar() {
+  const el = document.getElementById('myip-bar');
+  if (!el) return;
+  if (!myIp) { el.style.display = 'none'; return; }
+  const blocked = blockedIps.has(myIp);
+  el.style.display = 'flex';
+  el.className = 'myip-bar' + (blocked ? ' warn' : '');
+  el.innerHTML = blocked
+    ? `<span>⚠️ 지금 접속 중인 내 IP <b>${esc(myIp)}</b> 가 차단 목록에 들어 있습니다. 홈페이지에 차단 화면이 뜹니다.</span>
+       <button class="sel-btn" type="button" id="myip-unblock">내 IP 차단 즉시 해제</button>`
+    : `<span>지금 접속 중인 내 IP는 <b>${esc(myIp)}</b> 입니다. 이 IP는 선택·차단 대상에서 자동으로 제외됩니다.</span>`;
+}
+
+document.getElementById('myip-bar').addEventListener('click', e => {
+  if (e.target.closest('#myip-unblock') && myIp) unblockIp(myIp, true);
+});
 
 document.getElementById('fraud-table-body').addEventListener('change', e => {
   if (e.target.classList.contains('ip-row-chk')) syncSel();
 });
 
 function selAll(on) {
-  document.querySelectorAll('.ip-row-chk').forEach(c => { c.checked = on; });
+  document.querySelectorAll('.ip-row-chk').forEach(c => { if (!c.disabled) c.checked = on; });
   syncSel();
 }
 function selByScore() {
   document.querySelectorAll('.ip-row-chk').forEach(c => {
+    if (c.disabled) return;
     const row = fraudRows.find(r => r.ip === c.value);
     c.checked = !!row && row.score >= BLOCK_THRESHOLD;
   });
   syncSel();
 }
 function selectedIps() {
-  return [...document.querySelectorAll('.ip-row-chk')].filter(c => c.checked).map(c => c.value);
+  return [...document.querySelectorAll('.ip-row-chk')]
+    .filter(c => c.checked && !c.disabled)
+    .map(c => c.value)
+    .filter(ip => ip !== myIp);   // 내 IP는 어떤 경로로도 섞이지 않게 한다
 }
 function syncSel() {
   const ips = selectedIps();
@@ -2598,7 +2697,7 @@ function syncSel() {
   document.getElementById('sel-bar').classList.toggle('on', ips.length > 0);
   document.getElementById('sel-copy').disabled = !ips.length;
   document.getElementById('sel-block').disabled = !ips.length;
-  const all = document.querySelectorAll('.ip-row-chk').length;
+  const all = document.querySelectorAll('.ip-row-chk:not(:disabled)').length;
   const chkAll = document.getElementById('chk-all');
   if (chkAll) chkAll.checked = all > 0 && ips.length === all;
 }
@@ -2617,6 +2716,10 @@ async function copySelected() {
 async function blockSelected() {
   const ips = selectedIps();
   if (!ips.length) return;
+  if (myIp && ips.includes(myIp)) {
+    alert('내 IP(' + myIp + ')는 차단할 수 없습니다.');
+    return;
+  }
   const days = parseInt(document.getElementById('blk-days').value, 10) || 7;
   if (!confirm(`${ips.length}개 IP를 ${days}일 동안 사이트 접속 차단합니다.\n\n` +
                `해당 IP로 홈페이지에 들어오면 차단 안내 화면이 표시됩니다.\n계속할까요?`)) return;
@@ -2647,6 +2750,7 @@ async function loadBlockList() {
   }
   const now = Date.now();
   blockedIps = new Set((data || []).filter(r => new Date(r.until).getTime() > now).map(r => r.ip));
+  renderMyIpBar();
   tb.innerHTML = (data && data.length)
     ? data.map(r => {
         const live = new Date(r.until).getTime() > now;
@@ -2655,7 +2759,7 @@ async function loadBlockList() {
           <td style="font-size:12px;color:var(--text-dim)">${esc(r.reason || '—')}</td>
           <td style="font-size:12px">${fmtDateTime(r.until)}</td>
           <td style="font-size:12px;color:var(--text-dim)">${fmtDateTime(r.created_at)}</td>
-          <td><button class="copy-btn" data-unblock="${esc(r.ip)}">해제</button></td>
+          <td><button class="copy-btn" data-unblock="${esc(r.ip)}">해제</button>${myIp && r.ip === myIp ? '<span class="my-tag">내 IP</span>' : ''}</td>
         </tr>`;
       }).join('')
     : '<tr class="empty-row"><td colspan="5">차단된 IP가 없습니다.</td></tr>';
@@ -2666,8 +2770,8 @@ document.getElementById('blk-tbody').addEventListener('click', e => {
   if (b) unblockIp(b.dataset.unblock);
 });
 
-async function unblockIp(ip) {
-  if (!confirm(`${ip} 의 접속 차단을 해제할까요?`)) return;
+async function unblockIp(ip, skipConfirm) {
+  if (!skipConfirm && !confirm(`${ip} 의 접속 차단을 해제할까요?`)) return;
   const { error } = await _sb.from('ip_blocks').delete().eq('ip', ip);
   if (error) { alert('해제 실패: ' + error.message); return; }
   await loadBlockList();
@@ -2675,7 +2779,9 @@ async function unblockIp(ip) {
 }
 
 async function copyBlockList() {
-  const list = fraudRows.filter(r => r.score >= BLOCK_THRESHOLD).map(r => r.ip);
+  const list = fraudRows.filter(r => r.score >= BLOCK_THRESHOLD)
+                        .map(r => r.ip)
+                        .filter(ip => ip !== myIp);   // 내 IP는 네이버 목록에도 넣지 않는다
   if (!list.length) {
     alert(`차단 권장(${BLOCK_THRESHOLD}점 이상) IP가 없습니다.\n\n지금 차단할 대상이 없다는 뜻이므로 정상입니다.`);
     return;
@@ -2699,6 +2805,14 @@ async function naverBlock(action) {
   if (action === 'apply') {
     const targets = fraudRows.filter(r => r.score >= BLOCK_THRESHOLD);
     if (!targets.length) { box.textContent = '등록할 대상이 없습니다. (70점 이상 IP 없음)'; return; }
+    // 서버가 대상을 다시 계산하므로 여기서 뺄 수는 없다. 대신 확실히 알려 준다.
+    const mineHit = myIp && targets.some(r => r.ip === myIp);
+    if (mineHit && !confirm(
+      '⚠️ 지금 접속 중인 내 IP(' + myIp + ')가 70점 이상 대상에 들어 있습니다.\n\n' +
+      '그대로 등록하면 내 IP에도 광고가 노출되지 않습니다.\n' +
+      '네이버 광고노출제한 관리에서 직접 지워야 풀립니다.\n\n' +
+      '그래도 계속할까요?'
+    )) { box.textContent = '취소되었습니다.'; return; }
     const ok = confirm(
       `IP ${targets.length}개를 네이버 광고노출제한에 실제로 등록합니다.\n\n` +
       `등록되면 해당 IP에는 광고가 노출되지 않습니다.\n` +
