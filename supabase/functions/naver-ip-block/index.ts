@@ -16,7 +16,8 @@
      POST /functions/v1/naver-ip-block
      { "action": "list" }                    → 현재 등록된 제한 IP 조회 (인증 점검용)
      { "action": "preview", "days": 7 }      → 등록 대상 미리보기 (네이버에 아무것도 안 보냄)
-     { "action": "apply", "days": 7 }        → 실제 등록
+     { "action": "apply", "days": 7 }        → 점수 기준(70점 이상)으로 실제 등록
+     { "action": "apply", "ips": ["1.2.3.4"] } → 관리자가 고른 IP만 실제 등록
    ══════════════════════════════════════════════════════════════ */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -108,7 +109,7 @@ Deno.serve(async (req) => {
     const { data: userData, error: userErr } = await admin.auth.getUser(auth.replace('Bearer ', ''));
     if (userErr || !userData?.user) return json({ error: '관리자 로그인이 필요합니다.' }, 401);
 
-    const { action = 'preview', days = 7 } = await req.json().catch(() => ({}));
+    const { action = 'preview', days = 7, ips } = await req.json().catch(() => ({}));
 
     // ── 인증 점검 / 현재 등록 현황 ────────────────────────────
     if (action === 'list') {
@@ -123,18 +124,41 @@ Deno.serve(async (req) => {
     });
     if (error) return json({ error: error.message }, 500);
 
-    const targets = (rows ?? [])
-      .filter((r: { score: number }) => r.score >= BLOCK_THRESHOLD)
-      .slice(0, MAX_PER_RUN);
+    type Row = { ip: string; score: number; clicks: number; reasons: string };
+    const all = (rows ?? []) as Row[];
+
+    // ips 가 오면 관리자가 화면에서 직접 고른 것이므로 점수 기준을 적용하지 않는다.
+    // 점수는 메모에만 쓰고, 목록에 없는 IP(직접 입력 등)도 그대로 등록한다.
+    const IPV4 = /^(\d{1,3}\.){3}\d{1,3}$/;
+    let targets: Array<{ ip: string; score: number | null; clicks: number | null; reasons: string | null }>;
+    let picked = false;
+
+    if (Array.isArray(ips) && ips.length) {
+      const clean = [...new Set(
+        ips.filter((v: unknown): v is string => typeof v === 'string' && IPV4.test(v.trim()))
+           .map((v: string) => v.trim()),
+      )];
+      if (!clean.length) return json({ error: '유효한 IP가 없습니다.' }, 400);
+      const byIp = new Map(all.map((r) => [r.ip, r]));
+      targets = clean.slice(0, MAX_PER_RUN).map((ip) => {
+        const r = byIp.get(ip);
+        return { ip, score: r?.score ?? null, clicks: r?.clicks ?? null, reasons: r?.reasons ?? null };
+      });
+      picked = true;
+    } else {
+      targets = all
+        .filter((r) => r.score >= BLOCK_THRESHOLD)
+        .slice(0, MAX_PER_RUN)
+        .map((r) => ({ ip: r.ip, score: r.score, clicks: r.clicks, reasons: r.reasons }));
+    }
 
     if (action === 'preview') {
       return json({
         action,
-        threshold: BLOCK_THRESHOLD,
+        mode: picked ? '관리자 선택' : `${BLOCK_THRESHOLD}점 이상 자동`,
+        threshold: picked ? null : BLOCK_THRESHOLD,
         count: targets.length,
-        targets: targets.map((r: { ip: string; score: number; clicks: number; reasons: string }) => ({
-          ip: r.ip, score: r.score, clicks: r.clicks, reasons: r.reasons,
-        })),
+        targets,
       });
     }
 
@@ -160,7 +184,7 @@ Deno.serve(async (req) => {
       }
 
       // 설명은 25자 제한 (네이버 에러코드 5502)
-      const memo = `자동차단 ${t.score}점`.slice(0, 25);
+      const memo = (t.score == null ? '관리자 지정' : `자동차단 ${t.score}점`).slice(0, 25);
       // 필드명은 조회 응답과 동일한 filterIp를 쓴다
       const r = await naver('POST', IP_PATH, { filterIp: t.ip, memo });
 
@@ -178,7 +202,7 @@ Deno.serve(async (req) => {
 
     return json({
       action,
-      threshold: BLOCK_THRESHOLD,
+      mode: picked ? '관리자 선택' : `${BLOCK_THRESHOLD}점 이상 자동`,
       existingCount: existingIps.length,
       attempted: results.length,
       succeeded: results.filter(r => r.ok).length,

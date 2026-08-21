@@ -1066,6 +1066,10 @@
         <button class="sel-btn danger" type="button" id="sel-block" onclick="blockSelected()" disabled>
           선택 IP 사이트 접속차단
         </button>
+        <button class="sel-btn danger" type="button" id="sel-naver" onclick="naverBlockSelected()" disabled
+                title="선택한 IP를 네이버 광고노출제한에 등록합니다 (광고비가 나가지 않게 막습니다)">
+          선택 IP 광고노출제한
+        </button>
       </div>
 
       <div class="table-wrap">
@@ -2757,6 +2761,7 @@ function syncSel() {
   document.getElementById('sel-bar').classList.toggle('on', ips.length > 0);
   document.getElementById('sel-copy').disabled = !ips.length;
   document.getElementById('sel-block').disabled = !ips.length;
+  document.getElementById('sel-naver').disabled = !ips.length;
   const all = document.querySelectorAll('.ip-row-chk').length;
   const chkAll = document.getElementById('chk-all');
   if (chkAll) chkAll.checked = all > 0 && ips.length === all;
@@ -2858,6 +2863,93 @@ async function copyBlockList() {
 }
 
 // ── 네이버 광고노출제한 자동 등록 ──────────────────────────
+// 화면에서 고른 IP를 그대로 네이버 광고노출제한에 등록한다.
+// 사이트 접속차단과 달리 이건 '광고가 아예 안 뜨게' 만드는 쪽이라 광고비가 절약된다.
+//
+// 반드시 미리보기(preview)를 먼저 던져 서버가 무엇을 등록할지 확인한다.
+// 구버전 함수는 ips를 무시하고 70점 이상을 올려버리므로, mode로 걸러낸다.
+async function naverCall(payload) {
+  const { data: sess } = await _sb.auth.getSession();
+  if (!sess.session) throw new Error('로그인이 만료되었습니다. 새로고침 후 다시 로그인해 주세요.');
+  const res = await fetch(SUPABASE_URL + '/functions/v1/naver-ip-block', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + sess.session.access_token,
+      'apikey': SUPABASE_ANON,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+  const text = await res.text();
+  let body = null;
+  try { body = JSON.parse(text); } catch (e) { /* 평문 응답 */ }
+  return { status: res.status, ok: res.ok, body, text };
+}
+
+async function naverBlockSelected() {
+  const ips = selectedIps();
+  if (!ips.length) return;
+
+  const box = document.getElementById('naver-block-result');
+  const btn = document.getElementById('sel-naver');
+  box.style.display = 'block';
+  box.textContent = '등록 대상 확인 중…';
+  btn.disabled = true; btn.textContent = '확인 중…';
+
+  try {
+    // ── 1단계: 서버가 무엇을 등록할지 먼저 물어본다 (네이버에 아무것도 안 보냄) ──
+    const pre = await naverCall({ action: 'preview', ips });
+    box.textContent = 'HTTP ' + pre.status + '\n\n' + (pre.body ? JSON.stringify(pre.body, null, 2) : pre.text);
+
+    if (!pre.ok) {
+      alert('확인 실패 (HTTP ' + pre.status + ')\n\n' +
+            ((pre.body && pre.body.error) ? pre.body.error : '아래 상자의 응답을 확인해 주세요.'));
+      return;
+    }
+    if (!pre.body || pre.body.mode !== '관리자 선택') {
+      alert('Edge Function이 아직 구버전입니다.\n\n' +
+            '지금 실행하면 선택한 IP가 아니라 70점 이상 IP가 등록됩니다.\n' +
+            'naver-ip-block 함수를 먼저 재배포한 뒤 다시 눌러 주세요.\n\n' +
+            '(안전을 위해 아무것도 등록하지 않았습니다.)');
+      return;
+    }
+
+    // ── 2단계: 실제 등록 대상 목록을 보여주고 확인받는다 ──
+    const targets = pre.body.targets || [];
+    const preview = targets.slice(0, 10).map(t => '· ' + t.ip + (t.score != null ? ' (' + t.score + '점)' : '')).join('\n');
+    const more = targets.length > 10 ? '\n… 외 ' + (targets.length - 10) + '개' : '';
+    const mineHit = myIp && targets.some(t => t.ip === myIp);
+
+    if (!confirm(
+      'IP ' + targets.length + '개를 네이버 광고노출제한에 등록합니다.\n\n' +
+      preview + more + '\n\n' +
+      (mineHit ? '※ 지금 접속 중인 내 IP(' + myIp + ')가 포함돼 있습니다.\n' : '') +
+      '등록되면 이 IP에는 광고가 아예 노출되지 않습니다.\n' +
+      '해제는 네이버 검색광고 → 도구 → 광고노출제한 관리에서 직접 해야 합니다.\n\n' +
+      '계속할까요?'
+    )) { box.textContent = '취소되었습니다. (아무것도 등록하지 않았습니다)'; return; }
+
+    // ── 3단계: 등록 ──
+    btn.textContent = '등록 중…';
+    const r = await naverCall({ action: 'apply', ips });
+    box.textContent = 'HTTP ' + r.status + '\n\n' + (r.body ? JSON.stringify(r.body, null, 2) : r.text);
+
+    if (r.ok && r.body && typeof r.body.succeeded === 'number') {
+      alert('네이버 광고노출제한 등록 완료\n\n' +
+            '요청 ' + r.body.attempted + '개 · 성공 ' + r.body.succeeded + '개\n\n' +
+            '다음 클릭부터 이 IP에는 광고가 노출되지 않습니다.');
+    } else {
+      alert('등록 결과를 확인해 주세요.\n아래 [네이버 자동차단] 상자에 응답이 표시됩니다.');
+    }
+  } catch (e) {
+    box.textContent = '호출 실패: ' + e.message;
+    alert('호출 실패: ' + e.message);
+  } finally {
+    btn.textContent = '선택 IP 광고노출제한';
+    syncSel();
+  }
+}
+
 // Edge Function(naver-ip-block)을 호출한다. API 키는 그 함수의
 // 시크릿에만 있고 이 페이지로는 절대 내려오지 않는다.
 async function naverBlock(action) {
