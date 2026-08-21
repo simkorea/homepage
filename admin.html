@@ -1022,8 +1022,10 @@
         <div style="font-size:12px;color:var(--text-dim);line-height:1.7;">
           <strong style="color:var(--text);">1 → 2 → 3 순서로</strong> 진행하세요.
           1·2번은 네이버에 아무것도 등록하지 않는 안전한 확인 단계입니다.
-          3번은 실제로 광고노출이 차단되므로, 반드시 2번으로 대상을 먼저 확인하세요.
+          3번은 실제로 광고노출이 차단되므로, 반드시 2번으로 대상을 먼저 확인하세요.<br>
+          <strong style="color:var(--text);">1. 연결 점검</strong>을 누르면 현재 등록된 IP 목록이 아래에 표로 뜨고, 거기서 <strong style="color:var(--text);">해제</strong>할 수 있습니다.
         </div>
+        <div id="naver-list" style="display:none;margin-top:10px;"></div>
         <pre id="naver-block-result" style="display:none;margin-top:10px;padding:10px;background:#0b0f17;border:1px solid var(--border);border-radius:8px;font-size:11px;line-height:1.6;color:var(--text-dim);max-height:260px;overflow:auto;white-space:pre-wrap;word-break:break-all;"></pre>
       </div>
 
@@ -3005,8 +3007,64 @@ async function naverBlock(action) {
       return;
     }
     box.textContent = 'HTTP ' + res.status + '\n\n' + out;
+
+    // 연결 점검 결과는 표로도 보여 주고, 거기서 바로 해제할 수 있게 한다
+    if (action === 'list') {
+      try { renderNaverList(JSON.parse(text).result); } catch (e) { /* 표는 못 그려도 위 원문은 남는다 */ }
+    }
   } catch (e) {
     box.textContent = '호출 실패: ' + e.message;
+  }
+}
+
+// 네이버에 현재 등록된 광고노출제한 IP 목록
+function renderNaverList(list) {
+  const wrap = document.getElementById('naver-list');
+  if (!Array.isArray(list)) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  if (!list.length) {
+    wrap.innerHTML = '<p style="font-size:12.5px;color:var(--text-dim);padding:8px 0;">현재 등록된 제한 IP가 없습니다.</p>';
+    return;
+  }
+  wrap.innerHTML =
+    '<div style="font-size:12.5px;color:var(--text-dim);margin-bottom:6px;">현재 네이버에 등록된 제한 IP ' + list.length + '개</div>' +
+    '<div class="table-wrap"><table><thead><tr>' +
+    '<th>IP</th><th>메모</th><th>등록일</th><th style="width:90px">작업</th>' +
+    '</tr></thead><tbody>' +
+    list.map(e => `<tr>
+      <td><strong style="font-family:monospace">${esc(e.filterIp || '')}</strong>${myIp && e.filterIp === myIp ? '<span class="my-tag">내 IP</span>' : ''}</td>
+      <td style="font-size:12px;color:var(--text-dim)">${esc(e.memo || '—')}</td>
+      <td style="font-size:12px;color:var(--text-dim)">${e.regTm ? fmtDateTime(new Date(e.regTm).toISOString()) : '—'}</td>
+      <td><button class="copy-btn" data-naver-off="${esc(e.filterIp || '')}">해제</button></td>
+    </tr>`).join('') +
+    '</tbody></table></div>';
+}
+
+document.getElementById('naver-list').addEventListener('click', e => {
+  const b = e.target.closest('[data-naver-off]');
+  if (b) naverUnregister(b.dataset.naverOff);
+});
+
+// 광고노출제한 해제 — 해제하면 그 IP에 다시 광고가 노출된다
+async function naverUnregister(ip) {
+  if (!ip) return;
+  if (!confirm(ip + ' 의 광고노출제한을 해제할까요?\n\n해제하면 이 IP에 다시 광고가 노출됩니다.')) return;
+
+  const box = document.getElementById('naver-block-result');
+  box.style.display = 'block';
+  box.textContent = '해제 중…';
+  try {
+    const r = await naverCall({ action: 'unregister', ips: [ip] });
+    box.textContent = 'HTTP ' + r.status + '\n\n' + (r.body ? JSON.stringify(r.body, null, 2) : r.text);
+    if (r.ok && r.body && r.body.removed > 0) {
+      alert(ip + ' 의 광고노출제한을 해제했습니다.');
+      naverBlock('list');   // 목록 새로고침
+    } else {
+      alert('해제되지 않았습니다. 아래 응답을 확인해 주세요.');
+    }
+  } catch (e) {
+    box.textContent = '호출 실패: ' + e.message;
+    alert('호출 실패: ' + e.message);
   }
 }
 

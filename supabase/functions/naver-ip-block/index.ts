@@ -18,6 +18,7 @@
      { "action": "preview", "days": 7 }      → 등록 대상 미리보기 (네이버에 아무것도 안 보냄)
      { "action": "apply", "days": 7 }        → 점수 기준(70점 이상)으로 실제 등록
      { "action": "apply", "ips": ["1.2.3.4"] } → 관리자가 고른 IP만 실제 등록
+     { "action": "unregister", "ips": ["1.2.3.4"] } → 등록된 제한을 해제
    ══════════════════════════════════════════════════════════════ */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -64,7 +65,7 @@ async function sign(timestamp: string, method: string, path: string, secret: str
   return btoa(String.fromCharCode(...new Uint8Array(mac)));
 }
 
-async function naver(method: 'GET' | 'POST' | 'DELETE', path: string, body?: unknown) {
+async function naver(method: 'GET' | 'POST' | 'DELETE', path: string, body?: unknown, query?: string) {
   const apiKey = Deno.env.get('NAVER_API_KEY');
   const secret = Deno.env.get('NAVER_SECRET_KEY');
   const customer = Deno.env.get('NAVER_CUSTOMER_ID');
@@ -74,7 +75,8 @@ async function naver(method: 'GET' | 'POST' | 'DELETE', path: string, body?: unk
   }
 
   const ts = Date.now().toString();
-  const res = await fetch(NAVER_BASE + path, {
+  // 서명 대상은 쿼리스트링을 제외한 경로다.
+  const res = await fetch(NAVER_BASE + path + (query ? '?' + query : ''), {
     method,
     headers: {
       'Content-Type': 'application/json; charset=UTF-8',
@@ -115,6 +117,39 @@ Deno.serve(async (req) => {
     if (action === 'list') {
       const r = await naver('GET', IP_PATH);
       return json({ action, naverStatus: r.status, ok: r.ok, result: r.body });
+    }
+
+    // ── 등록 해제 ─────────────────────────────────────────────
+    // 등록 목록에서 해당 IP의 ipFilterId를 찾아 그것만 지운다.
+    // 목록에 없는 IP는 건드리지 않는다.
+    if (action === 'unregister') {
+      const IPV4_U = /^(\d{1,3}\.){3}\d{1,3}$/;
+      const want = (Array.isArray(ips) ? ips : [])
+        .filter((v: unknown): v is string => typeof v === 'string' && IPV4_U.test(v.trim()))
+        .map((v: string) => v.trim());
+      if (!want.length) return json({ error: '해제할 IP가 없습니다.' }, 400);
+
+      const cur = await naver('GET', IP_PATH);
+      const list = Array.isArray(cur.body)
+        ? (cur.body as Array<{ ipFilterId?: number; filterIp?: string; memo?: string }>)
+        : [];
+      const hit = list.filter((e) => typeof e.filterIp === 'string' && want.includes(e.filterIp));
+
+      if (!hit.length) {
+        return json({ action, requested: want, matched: [], removed: 0, note: '네이버에 등록돼 있지 않습니다.' });
+      }
+
+      const ids = hit.map((e) => e.ipFilterId).join(',');
+      const r = await naver('DELETE', IP_PATH, undefined, 'ids=' + ids);
+      return json({
+        action,
+        requested: want,
+        matched: hit.map((e) => ({ ip: e.filterIp, id: e.ipFilterId, memo: e.memo })),
+        removed: r.ok ? hit.length : 0,
+        naverStatus: r.status,
+        ok: r.ok,
+        result: r.body,
+      });
     }
 
     // ── 등록 대상 산출 ────────────────────────────────────────
@@ -162,7 +197,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (action !== 'apply') return json({ error: 'action은 list / preview / apply 중 하나여야 합니다.' }, 400);
+    if (action !== 'apply') return json({ error: 'action은 list / preview / apply / unregister 중 하나여야 합니다.' }, 400);
 
     // ── 실제 등록 ─────────────────────────────────────────────
     // 먼저 네이버에 이미 등록된 목록을 읽는다.
