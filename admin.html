@@ -156,6 +156,9 @@
              padding:12px 14px; border-radius:10px; background:var(--surface2); border:1px solid var(--border); }
   .sel-bar.on { border-color:var(--gold); }
   .sel-n { font-size:13px; font-weight:700; color:var(--gold); min-width:74px; }
+  .sel-lbl { font-size:12px; color:var(--text-dim); }
+  .sel-bar select.crit { border-color:var(--border); }
+  .sel-bar select.crit.on { border-color:var(--gold); color:var(--gold); font-weight:700; }
   .sel-bar select, .sel-bar button { font-family:inherit; font-size:12.5px; }
   .sel-bar select { padding:7px 10px; border-radius:7px; background:var(--surface);
                     border:1px solid var(--border); color:var(--text); }
@@ -1029,8 +1032,27 @@
       <div class="sel-bar" id="sel-bar">
         <span class="sel-n" id="sel-n">선택 0개</span>
         <button class="sel-btn" type="button" onclick="selAll(true)">전체 선택</button>
-        <button class="sel-btn" type="button" onclick="selAll(false)">선택 해제</button>
-        <button class="sel-btn" type="button" onclick="selByScore()">70점 이상만</button>
+        <button class="sel-btn" type="button" onclick="clearSel()">선택 해제</button>
+        <span style="width:1px;height:22px;background:var(--border);"></span>
+        <span class="sel-lbl">자동 선택</span>
+        <select class="crit" id="sel-score" onchange="applyCriteria()" aria-label="점수 기준 자동 선택">
+          <option value="">점수 무관</option>
+          <option value="30">30점 이상</option>
+          <option value="40">40점 이상</option>
+          <option value="50">50점 이상</option>
+          <option value="60">60점 이상</option>
+          <option value="70">70점 이상</option>
+          <option value="80">80점 이상</option>
+          <option value="90">90점 이상</option>
+        </select>
+        <select class="crit" id="sel-clicks" onchange="applyCriteria()" aria-label="클릭 수 기준 자동 선택">
+          <option value="">클릭 무관</option>
+          <option value="2">2회 이상</option>
+          <option value="3">3회 이상</option>
+          <option value="5">5회 이상</option>
+          <option value="10">10회 이상</option>
+          <option value="20">20회 이상</option>
+        </select>
         <span style="width:1px;height:22px;background:var(--border);"></span>
         <button class="sel-btn" type="button" id="sel-copy" onclick="copySelected()" disabled>선택 IP 복사</button>
         <span style="width:1px;height:22px;background:var(--border);"></span>
@@ -2633,7 +2655,7 @@ async function loadFraudData() {
       <td><button class="copy-btn" onclick="copyIP('${esc(r.ip)}', this)">IP 복사</button></td>
     </tr>`;
   }).join('');
-  syncSel();
+  applyCriteria();   // 새로고침해도 지정한 기준대로 다시 선택된다
 }
 
 // 네이버 광고노출제한 관리에 그대로 붙여넣을 수 있게 줄바꿈으로만 구분한다.
@@ -2700,12 +2722,31 @@ function selAll(on) {
   document.querySelectorAll('.ip-row-chk').forEach(c => { c.checked = on; });
   syncSel();
 }
-function selByScore() {
+// 점수·클릭 기준으로 한 번에 고른다. 둘 다 지정하면 두 조건을 모두 만족하는 IP만 선택된다.
+function applyCriteria() {
+  const scoreEl  = document.getElementById('sel-score');
+  const clicksEl = document.getElementById('sel-clicks');
+  const minScore  = parseInt(scoreEl.value, 10);
+  const minClicks = parseInt(clicksEl.value, 10);
+  scoreEl.classList.toggle('on', !isNaN(minScore));
+  clicksEl.classList.toggle('on', !isNaN(minClicks));
+
   document.querySelectorAll('.ip-row-chk').forEach(c => {
+    if (isNaN(minScore) && isNaN(minClicks)) { c.checked = false; return; }
     const row = fraudRows.find(r => r.ip === c.value);
-    c.checked = !!row && row.score >= BLOCK_THRESHOLD;
+    if (!row) { c.checked = false; return; }
+    const okScore  = isNaN(minScore)  || Number(row.score)  >= minScore;
+    const okClicks = isNaN(minClicks) || Number(row.clicks) >= minClicks;
+    c.checked = okScore && okClicks;
   });
   syncSel();
+}
+
+// 선택 해제는 기준까지 같이 초기화한다
+function clearSel() {
+  document.getElementById('sel-score').value = '';
+  document.getElementById('sel-clicks').value = '';
+  applyCriteria();
 }
 function selectedIps() {
   return [...document.querySelectorAll('.ip-row-chk')].filter(c => c.checked).map(c => c.value);
