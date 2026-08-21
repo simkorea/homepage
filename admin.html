@@ -2622,7 +2622,7 @@ async function loadFraudData() {
     const isBlk = blockedIps.has(r.ip);
     const mine  = !!myIp && r.ip === myIp;
     return `<tr class="${isBlk ? 'blocked-row' : ''}">
-      <td><input type="checkbox" class="ipchk ip-row-chk" value="${esc(r.ip)}"${mine ? ' disabled title="내 IP라 차단할 수 없습니다"' : ''}></td>
+      <td><input type="checkbox" class="ipchk ip-row-chk" value="${esc(r.ip)}"${mine ? ' title="지금 접속 중인 내 IP입니다"' : ''}></td>
       <td><strong style="font-family:monospace;letter-spacing:0.04em;">${esc(r.ip)}</strong>${mine ? '<span class="my-tag">내 IP</span>' : ''}${isBlk ? '<span class="blk-tag">차단중</span>' : ''}</td>
       <td><span class="ip-count-badge ${danger ? '' : 'warn'}">${r.score}점</span></td>
       <td>${r.clicks}회</td>
@@ -2641,7 +2641,8 @@ async function loadFraudData() {
 // IP 선택 · 사이트 접속차단
 // ══════════════════════════════════════════
 let blockedIps = new Set();
-let myIp = null;   // 지금 이 관리자가 쓰는 IP — 실수로 스스로를 차단하지 않도록 지켜 둔다
+let myIp = null;          // 지금 이 관리자가 쓰는 IP
+let blockedUntil = new Map();   // ip → 해제 예정 시각
 
 // 서버가 보는 요청 IP를 그대로 돌려받는다 (adguard 가 쓰는 함수와 동일)
 async function loadMyIp() {
@@ -2657,39 +2658,57 @@ function renderMyIpBar() {
   if (!el) return;
   if (!myIp) { el.style.display = 'none'; return; }
   const blocked = blockedIps.has(myIp);
+  const until = blockedUntil.get(myIp);
   el.style.display = 'flex';
   el.className = 'myip-bar' + (blocked ? ' warn' : '');
   el.innerHTML = blocked
-    ? `<span>⚠️ 지금 접속 중인 내 IP <b>${esc(myIp)}</b> 가 차단 목록에 들어 있습니다. 홈페이지에 차단 화면이 뜹니다.</span>
-       <button class="sel-btn" type="button" id="myip-unblock">내 IP 차단 즉시 해제</button>`
-    : `<span>지금 접속 중인 내 IP는 <b>${esc(myIp)}</b> 입니다. 이 IP는 선택·차단 대상에서 자동으로 제외됩니다.</span>`;
+    ? `<span>지금 접속 중인 내 IP <b>${esc(myIp)}</b> 는 <strong>차단 중</strong>입니다${until ? ' (해제 예정 ' + fmtDateTime(until) + ')' : ''}. 이 와이파이에서는 홈페이지에 차단 화면이 뜹니다.</span>
+       <button class="sel-btn" type="button" id="myip-unblock">차단 해제</button>`
+    : `<span>지금 접속 중인 내 IP는 <b>${esc(myIp)}</b> 입니다. 사무실 공용 와이파이라면 이 IP를 막아 직원 클릭을 걸러낼 수 있습니다.</span>
+       <button class="sel-btn danger" type="button" id="myip-block">내 IP 차단</button>`;
 }
 
 document.getElementById('myip-bar').addEventListener('click', e => {
-  if (e.target.closest('#myip-unblock') && myIp) unblockIp(myIp, true);
+  if (!myIp) return;
+  if (e.target.closest('#myip-unblock')) unblockIp(myIp, true);
+  if (e.target.closest('#myip-block'))   blockMyIp();
 });
+
+// 사무실 공용 IP를 한 번에 등록한다. 기간은 위 [기간] 선택을 따른다.
+async function blockMyIp() {
+  const days = parseInt(document.getElementById('blk-days').value, 10) || 7;
+  if (!confirm(
+    '지금 접속 중인 내 IP(' + myIp + ')를 ' + days + '일 동안 차단합니다.\n\n' +
+    '이 와이파이를 쓰는 모든 기기에서 홈페이지에 차단 화면이 뜹니다.\n' +
+    '관리자 페이지는 그대로 쓸 수 있고, 위 [차단 해제] 버튼으로 즉시 되돌릴 수 있습니다.\n\n' +
+    '계속할까요?'
+  )) return;
+
+  const until = new Date(Date.now() + days * 864e5).toISOString();
+  const { error } = await _sb.from('ip_blocks')
+    .upsert([{ ip: myIp, until, reason: '사무실 공용 IP (직접 등록)', site: null }], { onConflict: 'ip' });
+  if (error) { alert('차단 실패: ' + error.message); return; }
+  await loadBlockList();
+  loadFraudData();
+}
 
 document.getElementById('fraud-table-body').addEventListener('change', e => {
   if (e.target.classList.contains('ip-row-chk')) syncSel();
 });
 
 function selAll(on) {
-  document.querySelectorAll('.ip-row-chk').forEach(c => { if (!c.disabled) c.checked = on; });
+  document.querySelectorAll('.ip-row-chk').forEach(c => { c.checked = on; });
   syncSel();
 }
 function selByScore() {
   document.querySelectorAll('.ip-row-chk').forEach(c => {
-    if (c.disabled) return;
     const row = fraudRows.find(r => r.ip === c.value);
     c.checked = !!row && row.score >= BLOCK_THRESHOLD;
   });
   syncSel();
 }
 function selectedIps() {
-  return [...document.querySelectorAll('.ip-row-chk')]
-    .filter(c => c.checked && !c.disabled)
-    .map(c => c.value)
-    .filter(ip => ip !== myIp);   // 내 IP는 어떤 경로로도 섞이지 않게 한다
+  return [...document.querySelectorAll('.ip-row-chk')].filter(c => c.checked).map(c => c.value);
 }
 function syncSel() {
   const ips = selectedIps();
@@ -2697,7 +2716,7 @@ function syncSel() {
   document.getElementById('sel-bar').classList.toggle('on', ips.length > 0);
   document.getElementById('sel-copy').disabled = !ips.length;
   document.getElementById('sel-block').disabled = !ips.length;
-  const all = document.querySelectorAll('.ip-row-chk:not(:disabled)').length;
+  const all = document.querySelectorAll('.ip-row-chk').length;
   const chkAll = document.getElementById('chk-all');
   if (chkAll) chkAll.checked = all > 0 && ips.length === all;
 }
@@ -2716,10 +2735,13 @@ async function copySelected() {
 async function blockSelected() {
   const ips = selectedIps();
   if (!ips.length) return;
-  if (myIp && ips.includes(myIp)) {
-    alert('내 IP(' + myIp + ')는 차단할 수 없습니다.');
-    return;
-  }
+  // 내 IP가 섞여 있으면 실수인지 한 번 더 묻는다 (사무실 공용 IP면 의도한 것일 수 있다)
+  if (myIp && ips.includes(myIp) && !confirm(
+    '선택 목록에 지금 접속 중인 내 IP(' + myIp + ')가 들어 있습니다.\n\n' +
+    '차단하면 이 컴퓨터·같은 와이파이에서는 홈페이지에 차단 화면이 뜹니다.\n' +
+    '(관리자 페이지는 계속 쓸 수 있고, 해제도 언제든 한 번에 됩니다.)\n\n' +
+    '계속할까요?'
+  )) return;
   const days = parseInt(document.getElementById('blk-days').value, 10) || 7;
   if (!confirm(`${ips.length}개 IP를 ${days}일 동안 사이트 접속 차단합니다.\n\n` +
                `해당 IP로 홈페이지에 들어오면 차단 안내 화면이 표시됩니다.\n계속할까요?`)) return;
@@ -2750,6 +2772,7 @@ async function loadBlockList() {
   }
   const now = Date.now();
   blockedIps = new Set((data || []).filter(r => new Date(r.until).getTime() > now).map(r => r.ip));
+  blockedUntil = new Map((data || []).map(r => [r.ip, r.until]));
   renderMyIpBar();
   tb.innerHTML = (data && data.length)
     ? data.map(r => {
@@ -2779,9 +2802,7 @@ async function unblockIp(ip, skipConfirm) {
 }
 
 async function copyBlockList() {
-  const list = fraudRows.filter(r => r.score >= BLOCK_THRESHOLD)
-                        .map(r => r.ip)
-                        .filter(ip => ip !== myIp);   // 내 IP는 네이버 목록에도 넣지 않는다
+  const list = fraudRows.filter(r => r.score >= BLOCK_THRESHOLD).map(r => r.ip);
   if (!list.length) {
     alert(`차단 권장(${BLOCK_THRESHOLD}점 이상) IP가 없습니다.\n\n지금 차단할 대상이 없다는 뜻이므로 정상입니다.`);
     return;
@@ -2808,10 +2829,10 @@ async function naverBlock(action) {
     // 서버가 대상을 다시 계산하므로 여기서 뺄 수는 없다. 대신 확실히 알려 준다.
     const mineHit = myIp && targets.some(r => r.ip === myIp);
     if (mineHit && !confirm(
-      '⚠️ 지금 접속 중인 내 IP(' + myIp + ')가 70점 이상 대상에 들어 있습니다.\n\n' +
-      '그대로 등록하면 내 IP에도 광고가 노출되지 않습니다.\n' +
-      '네이버 광고노출제한 관리에서 직접 지워야 풀립니다.\n\n' +
-      '그래도 계속할까요?'
+      '지금 접속 중인 내 IP(' + myIp + ')가 70점 이상 대상에 들어 있습니다.\n\n' +
+      '사무실 공용 IP를 막으려던 것이면 그대로 진행하시면 됩니다.\n' +
+      '다만 되돌리려면 네이버 광고노출제한 관리에서 직접 지워야 합니다.\n\n' +
+      '계속할까요?'
     )) { box.textContent = '취소되었습니다.'; return; }
     const ok = confirm(
       `IP ${targets.length}개를 네이버 광고노출제한에 실제로 등록합니다.\n\n` +
