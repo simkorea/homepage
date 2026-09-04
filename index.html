@@ -792,6 +792,103 @@ footer {
   .kp-dim.kp-on, .kp-card{ animation:none }
 }
 </style>
+<script type="application/ld+json">
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "(주)대종삼",
+    "description": "더코리츠힐 남산 시행사"
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "서울중현(주)",
+    "description": "더코리츠힐 남산 분양"
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "(주)티지어소시에이션",
+    "alternateName": "TG Association",
+    "description": "더코리츠힐 남산 설계"
+  }
+]
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "더코리츠힐 남산은 어디에 위치해 있나요?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "대지위치는 서울특별시 중구 동호로17길 297입니다. 지하철 6호선 버티고개역에서 도보 1분 거리의 초역세권이며 남산과 가깝습니다."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "총 세대수와 규모는 어떻게 되나요?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "아파트 34세대와 오피스텔 10실, 근린생활시설 10실로 구성됩니다. 건축규모는 지하 3층, 지상 6층 1개 동이며 대지면적은 1,606㎡(485.81평), 연면적은 8,467.4㎡(2,562.02평)입니다. 주차는 아파트와 오피스텔 전 세대 기준 1.5대이며 전 세대 지하주차입니다."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "전용면적과 타입 구성은 어떻게 되나요?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "전 세대 실사용 35평형 단일 평형으로 구성됩니다. 84A1 타입은 29세대이며 전용 84.54㎡(25.6평), 분양 104.36㎡(31.6평)로 4베이 구조입니다. 84B1 타입은 코너 5세대이며 전용 84.57㎡, 6호 라인 양면 채광 세대입니다."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "시행사와 설계사는 어디인가요?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "시행은 (주)대종삼, 분양은 서울중현(주), 설계는 TG Association((주)티지어소시에이션)이 담당합니다."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "방문 상담은 어떻게 하나요?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "홈페이지 관심고객 등록에서 성함과 연락처를 남기시면 전담 상담사가 빠르게 연락드립니다. 전화 문의는 1555-1087 입니다."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "입주는 언제인가요?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "홈페이지에 안내된 입주 예정 시기는 2026년 7월입니다. 정확한 일정은 1555-1087로 확인해 주시기 바랍니다."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "분양가는 얼마인가요?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "84A1형 기준 공급가는 15.0억원입니다. 타입과 층에 따라 달라질 수 있으므로 정확한 금액은 1555-1087로 문의해 주시기 바랍니다."
+      }
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "더코리츠힐 남산",
+  "alternateName": "THE KORITZ HILL",
+  "url": "https://homepage-iota-dun.vercel.app/",
+  "inLanguage": "ko-KR"
+}
+</script>
 </head>
 <body>
 
@@ -1175,6 +1272,69 @@ footer {
         <h3 style="font-size:16px; font-weight:700; margin-bottom:10px;">미래가치</h3>
         <p style="font-size:13px; color:var(--text-dim); line-height:1.7;">용산국제업무지구·용산정비창 개발<br>한남뉴타운 · 신당동 정비사업 인접</p>
       </div>
+    </div>
+  </section>
+
+  <!-- ══════ 자주 묻는 질문 (GEO) ══════ -->
+  <!-- 위 FAQPage 구조화 데이터와 문답이 1:1로 일치한다 -->
+  <style>
+  .faq{max-width:900px;margin:0 auto}
+  .faq dl{margin:0}
+  .faq dt{font-size:clamp(1rem,1.2vw,1.08rem);font-weight:700;color:var(--text);
+    padding-top:clamp(22px,3vw,30px)}
+  .faq dd{margin:.6em 0 0;font-size:clamp(.86rem,1.05vw,.94rem);line-height:1.95;
+    color:var(--text-dim);padding-bottom:clamp(22px,3vw,30px);
+    border-bottom:1px solid var(--border);overflow-wrap:anywhere}
+  .faq dl>div:last-child dd{border-bottom:0}
+  </style>
+  <section class="section-sm" id="faq">
+    <div class="fade-up">
+      <div class="section-tag"><iconify-icon icon="solar:question-circle-bold"></iconify-icon> FAQ</div>
+      <h2 class="section-title">자주 묻는 질문</h2>
+    </div>
+    <div class="faq">
+      <dl>
+        <div>
+          <dt>더코리츠힐 남산은 어디에 위치해 있나요?</dt>
+          <dd>대지위치는 서울특별시 중구 동호로17길 297입니다.
+            지하철 6호선 버티고개역에서 도보 1분 거리의 초역세권이며 남산과 가깝습니다.</dd>
+        </div>
+        <div>
+          <dt>총 세대수와 규모는 어떻게 되나요?</dt>
+          <dd>아파트 34세대와 오피스텔 10실, 근린생활시설 10실로 구성됩니다.
+            건축규모는 지하 3층, 지상 6층 1개 동이며 대지면적은 1,606㎡(485.81평),
+            연면적은 8,467.4㎡(2,562.02평)입니다.
+            주차는 아파트와 오피스텔 전 세대 기준 1.5대이며 전 세대 지하주차입니다.</dd>
+        </div>
+        <div>
+          <dt>전용면적과 타입 구성은 어떻게 되나요?</dt>
+          <dd>전 세대 실사용 35평형 단일 평형으로 구성됩니다. 84A1 타입은 29세대이며
+            전용 84.54㎡(25.6평), 분양 104.36㎡(31.6평)로 4베이 구조입니다.
+            84B1 타입은 코너 5세대이며 전용 84.57㎡, 6호 라인 양면 채광 세대입니다.</dd>
+        </div>
+        <div>
+          <dt>시행사와 설계사는 어디인가요?</dt>
+          <!-- TODO: 확인필요 — 시공사가 확정·공개되면 이 답변에 추가할 것 (현재 홈페이지에 시공사 표기 없음) -->
+          <dd>시행은 (주)대종삼, 분양은 서울중현(주),
+            설계는 TG Association((주)티지어소시에이션)이 담당합니다.</dd>
+        </div>
+        <div>
+          <dt>방문 상담은 어떻게 하나요?</dt>
+          <dd>홈페이지 관심고객 등록에서 성함과 연락처를 남기시면 전담 상담사가 빠르게 연락드립니다.
+            전화 문의는 <a href="tel:1555-1087">1555-1087</a> 입니다.</dd>
+        </div>
+        <div>
+          <dt>입주는 언제인가요?</dt>
+          <!-- TODO: 확인필요 — 사이트 표기 입주예정(2026년 7월)이 이미 지난 시점이다. 실제 일정으로 갱신할 것 -->
+          <dd>홈페이지에 안내된 입주 예정 시기는 2026년 7월입니다.
+            정확한 일정은 <a href="tel:1555-1087">1555-1087</a>로 확인해 주시기 바랍니다.</dd>
+        </div>
+        <div>
+          <dt>분양가는 얼마인가요?</dt>
+          <dd>84A1형 기준 공급가는 15.0억원입니다. 타입과 층에 따라 달라질 수 있으므로
+            정확한 금액은 <a href="tel:1555-1087">1555-1087</a>로 문의해 주시기 바랍니다.</dd>
+        </div>
+      </dl>
     </div>
   </section>
 </div>

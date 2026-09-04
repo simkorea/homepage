@@ -15,3 +15,20 @@ desktop.ini
 # 임시 파일
 *.log
 *.tmp
+
+# 작업용 임시 파일 (배포 대상 아님)
+*.mp4
+*.zip
+screenshot.mjs
+shot.mjs
+repro.mjs
+bu-*.png
+bu2-*.png
+ref-*.png
+ref2-*.png
+ph-*.png
+repro-*.png
+index_new.html
+index_*_backup.html
+robots_*.txt
+sitemap_*.xml
