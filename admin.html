@@ -1260,6 +1260,39 @@
         </table>
       </div>
 
+      <!-- ── 입찰 이력 (자동입찰 프로그램 CSV) ──────────────────
+           네이버 API에는 "내가 얼마를 불렀는가"가 없다. 그건 자동입찰
+           프로그램이 자기 CSV에만 남긴다. 그래서 파일을 직접 읽어
+           위 성과 표 아래에 나란히 붙인다.
+           두 숫자를 곱하거나 나누지 않는다. 소스가 달라서 클릭당 입찰가
+           같은 계산을 하면 틀린 값이 나온다. 보기만 한다. -->
+      <div class="table-wrap" style="margin-top:20px;">
+        <div style="padding:14px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div>
+            <div style="font-size:13px;font-weight:700;">입찰 이력 <span style="font-weight:400;color:var(--text-dim);">(자동입찰 프로그램 CSV)</span></div>
+            <div style="font-size:11.5px;color:var(--text-dim);margin-top:4px;">
+              자동입찰 폴더의 <code>bid_history_log.csv</code> 또는 <code>bid_history.csv</code>를 올리면 키워드별로 묶어 보여줍니다.
+              브라우저 안에서만 읽고 어디에도 저장하지 않습니다.
+            </div>
+          </div>
+          <input type="file" id="bid-file" accept=".csv,text/csv" style="margin-left:auto;font-size:12px;color:var(--text-dim);">
+        </div>
+        <p id="bid-msg" style="font-size:12.5px;color:var(--text-dim);padding:0 16px 12px;margin:0;"></p>
+        <table>
+          <thead>
+            <tr>
+              <th>키워드</th>
+              <th style="text-align:right">기록</th>
+              <th style="text-align:right">평균 세팅 단가</th>
+              <th style="text-align:right">최고</th>
+              <th style="text-align:right">최근 단가</th>
+              <th style="text-align:right">마지막 기록</th>
+            </tr>
+          </thead>
+          <tbody id="bid-tbody"><tr class="empty-row"><td colspan="6">CSV를 올리면 표시됩니다.</td></tr></tbody>
+        </table>
+      </div>
+
       <p style="font-size:12px;color:var(--text-dim);margin-top:12px;line-height:1.7;">
         광고비가 새는 지점(부정클릭 의심 IP, 낭비 키워드)은
         <a href="javascript:switchTab('fraud')" style="color:var(--gold);">부정클릭 탐지</a> ·
@@ -3361,6 +3394,110 @@ function renderAdsChart(rows) {
     },
   });
 }
+
+// ── 입찰 이력 CSV 읽기 ────────────────────────────────────
+// 자동입찰 프로그램이 남기는 CSV를 브라우저에서 직접 파싱한다.
+// 서버로 보내지 않는다. 올린 파일은 이 탭을 벗어나면 사라진다.
+//
+// 두 가지 형식이 있어 헤더를 보고 컬럼을 잡는다:
+//   bid_history_log.csv  날짜,시간,키워드명,당시 1위 예상단가,적용된 가산금,최종 세팅 단가
+//   bid_history.csv      일시,키워드,목표순위,예상단가,최종입찰가,시간배수,비즈머니잔액,결과
+
+// 값에 쉼표가 들어간 칸("125,000")이 있어 따옴표를 존중해야 한다.
+function csvSplit(line) {
+  const out = [];
+  let cur = '', q = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (q) {
+      if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+      else if (ch === '"') q = false;
+      else cur += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === ',') { out.push(cur); cur = ''; }
+    else cur += ch;
+  }
+  out.push(cur);
+  return out.map(s => s.trim());
+}
+
+// 프로그램이 UTF-8(BOM)로 쓰지만, 엑셀에서 다시 저장하면 cp949가 되기도 한다.
+async function readCsvText(file) {
+  const buf = await file.arrayBuffer();
+  let txt = new TextDecoder('utf-8').decode(buf);
+  // 깨진 문자가 섞여 있으면 euc-kr로 다시 읽는다
+  if (txt.includes('�')) {
+    try { txt = new TextDecoder('euc-kr').decode(buf); } catch (e) { /* 그대로 둔다 */ }
+  }
+  return txt.replace(/^﻿/, '');
+}
+
+async function handleBidCsv(file) {
+  const msg = document.getElementById('bid-msg');
+  const tb = document.getElementById('bid-tbody');
+  try {
+    const txt = await readCsvText(file);
+    const lines = txt.split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) throw new Error('내용이 없습니다.');
+
+    const head = csvSplit(lines[0]);
+    const at = (...names) => head.findIndex(h => names.some(n => h.replace(/\s/g, '') === n.replace(/\s/g, '')));
+
+    const iKw   = at('키워드명', '키워드');
+    const iBid  = at('최종 세팅 단가', '최종입찰가');
+    const iDate = at('날짜', '일시');
+    const iTime = at('시간');
+    if (iKw < 0 || iBid < 0) {
+      throw new Error('키워드/입찰가 열을 찾지 못했습니다. 헤더: ' + head.join(', '));
+    }
+
+    const byKw = new Map();
+    let used = 0;
+    for (const line of lines.slice(1)) {
+      const c = csvSplit(line);
+      const kw = c[iKw];
+      const bid = Number(String(c[iBid] ?? '').replace(/[^\d.-]/g, ''));
+      if (!kw || !Number.isFinite(bid)) continue;
+      const when = ((iDate >= 0 ? c[iDate] : '') + ' ' + (iTime >= 0 ? c[iTime] : '')).trim();
+      if (!byKw.has(kw)) byKw.set(kw, { n: 0, sum: 0, max: 0, last: '', lastBid: 0 });
+      const v = byKw.get(kw);
+      v.n++; v.sum += bid; v.max = Math.max(v.max, bid);
+      // 파일이 시간순이므로 마지막으로 본 행이 가장 최근이다
+      if (when >= v.last) { v.last = when; v.lastBid = bid; }
+      used++;
+    }
+
+    if (!byKw.size) throw new Error('읽을 수 있는 행이 없습니다.');
+
+    const rows = [...byKw.entries()]
+      .map(([kw, v]) => ({ kw, ...v, avg: v.sum / v.n }))
+      .sort((a, b) => b.avg - a.avg);
+
+    const newest = rows.reduce((a, r) => (r.last > a ? r.last : a), '');
+    const stale = newest && new Date(newest.slice(0, 10)) < new Date(Date.now() - 14 * 864e5);
+
+    tb.innerHTML = rows.map(r => `
+      <tr>
+        <td>${esc(r.kw)}</td>
+        <td style="text-align:right">${r.n}</td>
+        <td style="text-align:right">${wonFmt(r.avg)}</td>
+        <td style="text-align:right">${wonFmt(r.max)}</td>
+        <td style="text-align:right">${wonFmt(r.lastBid)}</td>
+        <td style="text-align:right;color:var(--text-dim)">${esc(r.last || '—')}</td>
+      </tr>`).join('');
+
+    msg.innerHTML = esc(`${file.name} · ${used}행 · 키워드 ${rows.length}개 · 마지막 기록 ${newest || '알 수 없음'}`) +
+      (stale ? ' <span style="color:var(--red)">· 2주 넘게 갱신되지 않은 파일입니다. 자동입찰이 돌고 있는지 확인하세요.</span>' : '');
+  } catch (err) {
+    msg.innerHTML = '<span style="color:var(--red)">읽지 못했습니다: ' + esc(err.message) + '</span>';
+    tb.innerHTML = '<tr class="empty-row"><td colspan="6">—</td></tr>';
+  }
+}
+
+document.getElementById('bid-file').addEventListener('change', (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (f) handleBidCsv(f);
+});
 
 // ══════════════════════════════════════════
 // INIT
