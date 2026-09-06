@@ -198,7 +198,14 @@ async function fetchStats(
     p.set('fields', JSON.stringify(fields));
     p.set('timeRange', JSON.stringify({ since, until }));
 
-    const r = await naverGet('/stats', p);
+    // 한 번 실패했다고 그냥 넘기면 그날 숫자가 0으로 찍혀 조용히 틀린
+    // 그래프가 나온다. 일별 조회는 여러 요청을 겹쳐 던지느라 가끔 튕기므로
+    // 잠깐 쉬고 한 번 더 물어본다.
+    let r = await naverGet('/stats', p);
+    if (!r.ok) {
+      await new Promise((res) => setTimeout(res, 700));
+      r = await naverGet('/stats', p);
+    }
     if (!r.ok) { errors.push({ status: r.status, body: r.body }); continue; }
 
     const data = (r.body as { data?: unknown })?.data;
@@ -341,7 +348,7 @@ Deno.serve(async (req) => {
         if (days.length >= MAX_DAILY_DAYS) break;
       }
 
-      const daily: Array<{ date: string } & ReturnType<typeof derive>> = [];
+      const daily: Array<{ date: string; failed?: boolean } & ReturnType<typeof derive>> = [];
       const errors: Array<{ status: number; body: unknown }> = [];
 
       for (let i = 0; i < days.length; i += DAILY_CONCURRENCY) {
@@ -359,7 +366,13 @@ Deno.serve(async (req) => {
         );
         for (const s of settled) {
           errors.push(...s.errors);
-          daily.push({ date: s.date, ...derive(s.t.imp, s.t.clk, s.t.cost) });
+          // 재시도까지 실패한 날은 0으로 찍지 않는다. 0원 쓴 날과
+          // 못 물어본 날은 다른 이야기다. failed를 달아 화면에서 구멍으로 보인다.
+          daily.push({
+            date: s.date,
+            ...derive(s.t.imp, s.t.clk, s.t.cost),
+            ...(s.errors.length ? { failed: true } : {}),
+          });
         }
       }
 
@@ -373,6 +386,8 @@ Deno.serve(async (req) => {
         action, ok: errors.length === 0, since, until,
         ids: ids.length,
         daysQueried: days.length,
+        // 재시도까지 실패해 값을 모르는 날 수. 0이 아니면 그래프에 구멍이 있다.
+        daysFailed: daily.filter((d) => d.failed).length,
         daily,
         totals: derive(t.imp, t.clk, t.cost),
         notice: 'salesAmt(광고비)는 부가세 별도 기준입니다.',

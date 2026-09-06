@@ -3322,10 +3322,11 @@ function renderAds({ summary, daily }) {
     `캠페인 ${all.length}개 중 노출된 것 ${live.length}개`,
     `전체 CTR ${t.ctr.toFixed(2)}%`,
   ];
-  const errs = (summary.errors || []).concat(daily.errors || []);
+  // 값을 못 받은 날은 0이 아니라 "모름"이다. 그래프에 구멍으로 두고 여기서 알린다.
+  const failed = daily.daysFailed || 0;
   document.getElementById('ads-msg').innerHTML =
     esc(parts.join(' · ')) +
-    (errs.length ? ` <span style="color:var(--red)">· 네이버 응답 오류 ${errs.length}건</span>` : '');
+    (failed ? ` <span style="color:var(--red)">· ${failed}일치는 네이버가 응답하지 않아 비어 있습니다(0원이 아님)</span>` : '');
 
   // ── 표 ──
   // 노출이 0인 캠페인은 줄만 차지하므로 감춘다. 44개 중 대부분이 그렇다.
@@ -3361,14 +3362,16 @@ function renderAdsChart(rows) {
       labels: rows.map(r => r.date.slice(5).replace('-', '/')),
       datasets: [
         {
-          type: 'bar', label: '광고비(원)', data: rows.map(r => r.salesAmt),
+          // failed인 날은 null로 둔다. 0으로 그리면 "안 썼다"로 읽혀 거짓말이 된다.
+          type: 'bar', label: '광고비(원)', data: rows.map(r => r.failed ? null : r.salesAmt),
           backgroundColor: 'rgba(201,165,90,0.35)', borderColor: gold, borderWidth: 1,
           yAxisID: 'y', order: 2,
         },
         {
-          type: 'line', label: '클릭', data: rows.map(r => r.clkCnt),
+          type: 'line', label: '클릭', data: rows.map(r => r.failed ? null : r.clkCnt),
           borderColor: blue, backgroundColor: blue, borderWidth: 2,
           pointRadius: 2, tension: 0.25, yAxisID: 'y1', order: 1,
+          spanGaps: false,
         },
       ],
     },
