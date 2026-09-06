@@ -9,6 +9,8 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
 <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+<!-- 네이버 광고비 탭의 일별 추이 그래프용. 이 페이지에서 유일하게 쓰는 차트 라이브러리다. -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root {
     --bg: #0c0c0e;
@@ -843,6 +845,10 @@
         <iconify-icon icon="solar:chart-square-bold"></iconify-icon>
         광고 성과
       </button>
+      <button class="tab-btn" id="tab-ads-btn" onclick="switchTab('ads')">
+        <iconify-icon icon="solar:wallet-money-bold"></iconify-icon>
+        네이버 광고비
+      </button>
       <button class="tab-btn" id="tab-visitor-btn" onclick="switchTab('visitor')">
         <iconify-icon icon="solar:users-group-rounded-bold"></iconify-icon>
         방문자 통계
@@ -1181,6 +1187,85 @@
         </table>
       </div>
       <p class="perf-note" id="perf-note"></p>
+    </div>
+
+    <!-- ── 탭: 네이버 광고비 ──────────────────────────────────
+         옆의 "광고 성과" 탭과 헷갈리기 쉬운데 보는 곳이 다르다.
+           광고 성과   내 사이트에서 일어난 일 (방문 → 상담 전환)
+           네이버 광고비  네이버에서 일어난 일 (노출 → 클릭 → 비용)
+         둘을 이어 붙이면 노출부터 상담까지의 깔때기가 된다.
+         숫자는 naver-ad-stats Edge Function이 가져온다. API 키는
+         그 함수 안에만 있고 이 페이지로는 내려오지 않는다. -->
+    <div class="tab-content" id="tab-ads">
+      <div class="section-head" style="margin-bottom:16px;">
+        <h2 style="font-size:17px;font-weight:700;">네이버 검색광고 집행 현황</h2>
+        <p style="font-size:12.5px;color:var(--text-dim);margin-top:5px;">
+          네이버 광고관리자의 노출·클릭·광고비를 그대로 가져옵니다.
+          광고비는 <strong>부가세 별도</strong> 기준이라 실제 청구액과 10% 차이가 납니다.
+        </p>
+      </div>
+
+      <div class="filter-bar" id="ads-period" style="margin-bottom:14px;">
+        <button class="filter-btn" onclick="setAdsPeriod(7)">최근 7일</button>
+        <button class="filter-btn active" onclick="setAdsPeriod(30)">최근 30일</button>
+        <button class="filter-btn" onclick="setAdsPeriod(60)">최근 60일</button>
+        <button class="refresh-btn" style="margin-left:auto;" onclick="loadAdsData(true)">
+          <iconify-icon icon="solar:refresh-bold"></iconify-icon> 새로고침
+        </button>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">광고비 (VAT 별도)</div>
+          <div class="stat-value gold" id="ads-cost">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">클릭</div>
+          <div class="stat-value" id="ads-clk">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">노출</div>
+          <div class="stat-value" id="ads-imp">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">평균 클릭당 비용</div>
+          <div class="stat-value" id="ads-cpc">—</div>
+        </div>
+      </div>
+
+      <p id="ads-msg" style="font-size:12.5px;color:var(--text-dim);margin:4px 0 14px;"></p>
+
+      <div class="table-wrap" style="margin-bottom:20px;padding:14px 16px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;">일별 추이</div>
+        <div style="position:relative;height:260px;">
+          <canvas id="ads-chart"></canvas>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <div style="padding:14px 16px 0;font-size:13px;font-weight:700;">캠페인별 집행</div>
+        <table>
+          <thead>
+            <tr>
+              <th>캠페인</th>
+              <th style="text-align:right">노출</th>
+              <th style="text-align:right">클릭</th>
+              <th style="text-align:right">CTR</th>
+              <th style="text-align:right">CPC</th>
+              <th style="text-align:right">광고비</th>
+              <th style="text-align:right">평균순위</th>
+            </tr>
+          </thead>
+          <tbody id="ads-tbody"><tr class="empty-row"><td colspan="7">탭을 열면 불러옵니다.</td></tr></tbody>
+        </table>
+      </div>
+
+      <p style="font-size:12px;color:var(--text-dim);margin-top:12px;line-height:1.7;">
+        광고비가 새는 지점(부정클릭 의심 IP, 낭비 키워드)은
+        <a href="javascript:switchTab('fraud')" style="color:var(--gold);">부정클릭 탐지</a> ·
+        <a href="javascript:switchTab('keyword')" style="color:var(--gold);">검색어 분석</a> 탭에서 봅니다.
+        여기서 중복해 보여주지 않습니다.
+      </p>
     </div>
 
     <!-- ── 탭: 방문자 통계 ── -->
@@ -2078,7 +2163,7 @@ function startClock() {
 // TABS
 // ══════════════════════════════════════════
 function switchTab(tab) {
-  ['consult', 'fraud', 'calendar', 'perf', 'visitor', 'keyword'].forEach(t => {
+  ['consult', 'fraud', 'calendar', 'perf', 'ads', 'visitor', 'keyword'].forEach(t => {
     document.getElementById('tab-' + t).classList.toggle('active', t === tab);
     document.getElementById('tab-' + t + '-btn').classList.toggle('active', t === tab);
   });
@@ -2087,6 +2172,7 @@ function switchTab(tab) {
   if (tab === 'visitor') { loadVisitorData(); startVisitorAuto(); } else stopVisitorAuto();
   if (tab === 'calendar') renderCalendar();
   if (tab === 'perf')     loadPerfData();
+  if (tab === 'ads')      loadAdsData();
 }
 
 
@@ -3113,6 +3199,167 @@ async function copyIP(ip, btn) {
   } catch(e) {
     prompt('아래 IP를 복사하세요:', ip);
   }
+}
+
+// ══════════════════════════════════════════
+// 네이버 광고비
+// ──────────────────────────────────────────
+// naver-ad-stats Edge Function을 부른다. 네이버 API 키는 그 함수의
+// 시크릿에만 있다. 이 페이지는 정적 파일이라 로그인 여부와 무관하게
+// 누구나 소스를 볼 수 있으므로, 키를 여기 두면 그대로 유출된다.
+//
+// 한 번 불러온 결과는 기간별로 캐시한다. 탭을 오갈 때마다 네이버를
+// 다시 두드리면 느리기만 하고 얻는 게 없다. 새로고침 버튼은 캐시를 비운다.
+// ══════════════════════════════════════════
+let adsPeriod = 30;
+let adsChart = null;
+const adsCache = new Map();   // days -> { summary, daily }
+
+function setAdsPeriod(days) {
+  adsPeriod = days;
+  document.querySelectorAll('#ads-period .filter-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.includes(String(days)));
+  });
+  loadAdsData();
+}
+
+async function adsCall(payload) {
+  const { data: sess } = await _sb.auth.getSession();
+  if (!sess.session) throw new Error('로그인이 만료되었습니다. 새로고침 후 다시 로그인해 주세요.');
+  const res = await fetch(SUPABASE_URL + '/functions/v1/naver-ad-stats', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + sess.session.access_token,
+      'apikey': SUPABASE_ANON,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+  if (res.status === 404) {
+    throw new Error('Edge Function이 배포되지 않았습니다. Supabase 대시보드 → Edge Functions에서 naver-ad-stats를 배포하세요.');
+  }
+  const body = await res.json().catch(() => null);
+  if (!res.ok) throw new Error((body && body.error) || ('HTTP ' + res.status));
+  return body;
+}
+
+const wonFmt = n => '₩' + Math.round(n).toLocaleString('ko-KR');
+const cntFmt = n => Math.round(n).toLocaleString('ko-KR');
+
+async function loadAdsData(force) {
+  const msg = document.getElementById('ads-msg');
+  const tb = document.getElementById('ads-tbody');
+  const days = adsPeriod;
+
+  if (force) adsCache.delete(days);
+  const hit = adsCache.get(days);
+  if (hit) { renderAds(hit); return; }
+
+  msg.textContent = '네이버에서 불러오는 중… (일별은 하루씩 조회하므로 몇 초 걸립니다)';
+  tb.innerHTML = '<tr class="empty-row"><td colspan="7">불러오는 중…</td></tr>';
+
+  try {
+    // 두 요청은 서로 독립이라 같이 던진다
+    const [summary, daily] = await Promise.all([
+      adsCall({ action: 'summary', days }),
+      adsCall({ action: 'daily', days }),
+    ]);
+    const payload = { summary, daily };
+    adsCache.set(days, payload);
+    renderAds(payload);
+  } catch (err) {
+    msg.innerHTML = '<span style="color:var(--red)">' + esc(err.message) + '</span>';
+    tb.innerHTML = `<tr class="empty-row"><td colspan="7">불러오지 못했습니다.</td></tr>`;
+  }
+}
+
+function renderAds({ summary, daily }) {
+  const t = summary.totals || { impCnt: 0, clkCnt: 0, salesAmt: 0, ctr: 0, cpc: 0 };
+
+  document.getElementById('ads-cost').textContent = wonFmt(t.salesAmt);
+  document.getElementById('ads-clk').textContent = cntFmt(t.clkCnt);
+  document.getElementById('ads-imp').textContent = cntFmt(t.impCnt);
+  document.getElementById('ads-cpc').textContent = t.clkCnt ? wonFmt(t.cpc) : '—';
+
+  // ── 안내 문구 ──
+  const all = summary.campaigns || [];
+  const live = all.filter(c => c.impCnt > 0);
+  const parts = [
+    `${summary.since} ~ ${summary.until}`,
+    `캠페인 ${all.length}개 중 노출된 것 ${live.length}개`,
+    `전체 CTR ${t.ctr.toFixed(2)}%`,
+  ];
+  const errs = (summary.errors || []).concat(daily.errors || []);
+  document.getElementById('ads-msg').innerHTML =
+    esc(parts.join(' · ')) +
+    (errs.length ? ` <span style="color:var(--red)">· 네이버 응답 오류 ${errs.length}건</span>` : '');
+
+  // ── 표 ──
+  // 노출이 0인 캠페인은 줄만 차지하므로 감춘다. 44개 중 대부분이 그렇다.
+  const tb = document.getElementById('ads-tbody');
+  tb.innerHTML = live.length ? live.map(c => `
+    <tr>
+      <td>${esc(c.name)}</td>
+      <td style="text-align:right">${cntFmt(c.impCnt)}</td>
+      <td style="text-align:right">${cntFmt(c.clkCnt)}</td>
+      <td style="text-align:right">${c.ctr.toFixed(2)}%</td>
+      <td style="text-align:right">${c.clkCnt ? wonFmt(c.cpc) : '—'}</td>
+      <td style="text-align:right">${wonFmt(c.salesAmt)}</td>
+      <td style="text-align:right">${c.avgRnk == null ? '—' : c.avgRnk.toFixed(1)}</td>
+    </tr>`).join('')
+    : '<tr class="empty-row"><td colspan="7">이 기간에 노출된 캠페인이 없습니다.</td></tr>';
+
+  renderAdsChart(daily.daily || []);
+}
+
+function renderAdsChart(rows) {
+  const el = document.getElementById('ads-chart');
+  if (!el || typeof Chart === 'undefined') return;
+  if (adsChart) { adsChart.destroy(); adsChart = null; }
+
+  const gold = '#c9a55a';
+  const blue = '#60a5fa';
+  const dim = 'rgba(240,237,232,0.45)';
+  const grid = 'rgba(255,255,255,0.06)';
+
+  adsChart = new Chart(el, {
+    data: {
+      // 8/15 형태로 줄여야 30일치가 가로로 들어간다
+      labels: rows.map(r => r.date.slice(5).replace('-', '/')),
+      datasets: [
+        {
+          type: 'bar', label: '광고비(원)', data: rows.map(r => r.salesAmt),
+          backgroundColor: 'rgba(201,165,90,0.35)', borderColor: gold, borderWidth: 1,
+          yAxisID: 'y', order: 2,
+        },
+        {
+          type: 'line', label: '클릭', data: rows.map(r => r.clkCnt),
+          borderColor: blue, backgroundColor: blue, borderWidth: 2,
+          pointRadius: 2, tension: 0.25, yAxisID: 'y1', order: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: dim, boxWidth: 12, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: (c) => c.dataset.label === '광고비(원)'
+              ? ' 광고비 ' + wonFmt(c.parsed.y)
+              : ' 클릭 ' + cntFmt(c.parsed.y),
+          },
+        },
+      },
+      scales: {
+        x: { ticks: { color: dim, font: { size: 10 }, maxRotation: 0, autoSkip: true }, grid: { color: grid } },
+        // 광고비와 클릭은 자릿수가 달라 축을 나눈다. 한 축에 겹치면 클릭이 바닥에 붙는다.
+        y:  { position: 'left',  beginAtZero: true, ticks: { color: dim, font: { size: 10 }, callback: v => (v / 10000).toFixed(0) + '만' }, grid: { color: grid } },
+        y1: { position: 'right', beginAtZero: true, ticks: { color: dim, font: { size: 10 } }, grid: { drawOnChartArea: false } },
+      },
+    },
+  });
 }
 
 // ══════════════════════════════════════════
