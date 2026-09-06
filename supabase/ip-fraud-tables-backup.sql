@@ -7,6 +7,9 @@
 -- 2026-09-05 라이브 DB의 pg_class / pg_indexes / pg_policies 에서 추출.
 -- 컬럼·인덱스·RLS 정책은 그대로 옮겼고, 읽기 쉽게 형식만 정리했다.
 --
+-- 2026-09-06 ad_clicks의 익명 INSERT 정책을 라이브 DB에서 삭제하고
+-- 이 파일도 맞췄다. 사유와 검증 결과는 ad_clicks 절에 적어두었다.
+--
 -- 함께 보기:
 --   ad-tracking.sql               log_ad_click, keyword_report
 --   ip-fraud-functions-backup.sql check_ip_block, check_site_visit,
@@ -58,15 +61,27 @@ create index if not exists ad_clicks_match_type_idx
 
 alter table public.ad_clicks enable row level security;
 
--- ⚠️ 이 정책은 익명(anon)에게 ad_clicks 직접 INSERT를 열어준다.
--- anon 키는 모든 사이트 소스에 노출돼 있으므로, 누구든 REST로
--- 임의의 ip_address 값을 넣은 행을 만들 수 있다는 뜻이다.
--- log_ad_click RPC는 IP를 요청 헤더에서 직접 읽어 위조를 막지만,
--- 이 정책이 그 우회로를 열어둔 상태다. 조작된 행이 쌓이면
--- suspicious_ips 점수 → 네이버 광고노출제한 자동 등록까지
--- 영향을 줄 수 있다. 손볼 때 함께 검토할 것.
-create policy "Anyone can insert ad_clicks"
-  on public.ad_clicks for insert to public with check (true);
+-- 여기엔 INSERT 정책이 없다. 그리고 없는 것이 맞다.
+--
+-- 2026-09-06 이전에는 아래 정책이 걸려 있었다:
+--   create policy "Anyone can insert ad_clicks"
+--     on public.ad_clicks for insert to public with check (true);
+--
+-- anon 키는 모든 현장 사이트 소스에 그대로 노출돼 있으므로, 이 정책은
+-- 누구나 REST로 ip_address를 임의로 채운 행을 만들 수 있게 열어둔
+-- 구멍이었다. log_ad_click을 SECURITY DEFINER로 만들고 IP를 요청
+-- 헤더에서 직접 읽게 한 이유(위조 방지)가 이 정책 하나로 무력화된다.
+-- 조작된 행이 쌓이면 suspicious_ips 점수 -> 70점 자동 차단 ->
+-- 네이버 광고노출제한에 엉뚱한 IP 등록까지 이어질 수 있었다.
+--
+-- 지운 뒤 실제로 확인한 것:
+--   익명 직접 INSERT  POST /rest/v1/ad_clicks     -> 401 (RLS 위반)
+--   익명 RPC 호출     POST /rest/v1/rpc/log_ad_click -> 200, uuid 반환
+-- 즉 우회로만 닫히고 정상 기록 경로는 그대로다.
+--
+-- 클라이언트는 log_ad_click RPC로만 기록한다. 그 함수에는
+-- grant execute ... to anon 이 따로 걸려 있어(ad-tracking.sql 참고)
+-- RLS INSERT 정책 없이도 동작한다. 되살릴 이유가 없다.
 
 create policy "auth can select ad_clicks"
   on public.ad_clicks for select to authenticated using (true);
@@ -91,7 +106,7 @@ alter table public.site_visits enable row level security;
 
 -- 여기엔 INSERT 정책이 없다. check_site_visit이 SECURITY DEFINER라
 -- 함수 소유자 권한으로 넣기 때문에 익명 직접 INSERT를 열 필요가 없다.
--- ad_clicks와 달리 우회로가 없는, 더 안전한 구성이다.
+-- ad_clicks도 2026-09-06부터 같은 구성이 되었다.
 create policy "auth can select site_visits"
   on public.site_visits for select to authenticated using (true);
 
