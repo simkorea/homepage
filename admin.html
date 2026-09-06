@@ -2131,9 +2131,47 @@ function openDetail(id) {
       <textarea class="memo-box" id="d-memo" placeholder="통화 내용, 다음 할 일 등을 적어두세요.">${esc(r.memo || '')}</textarea>
       <button class="save-btn" id="d-save" onclick="saveDetail('${r.id}')">메모 · 담당자 저장</button>
       <span id="d-saved" style="margin-left:10px;font-size:12.5px;color:var(--green);"></span>
+
+      <!-- 상담 후 "담당자 소개"를 보낼 때 쓴다. 카카오톡 자동메시지의
+           템플릿에 붙여넣거나 문자로 그대로 보내면 된다. -->
+      <div class="detail-label" style="margin:16px 0 8px">상담사 명함 링크</div>
+      <button class="save-btn" id="d-card" onclick="copyCardLink(this)"
+        style="background:var(--gold-dim);color:var(--gold);border:1px solid rgba(201,165,90,0.34);">
+        🪪 명함 링크 복사
+      </button>
+      <span id="d-card-msg" style="margin-left:10px;font-size:12.5px;color:var(--text-dim);"></span>
     </div>
   `;
   document.getElementById('detail-modal').classList.add('open');
+}
+
+// ── 상담사 명함 링크 ─────────────────────────────────────────
+// 상담사가 늘면 여기에 줄을 추가한다. 명함 저장소에 {슬러그}.html을
+// 하나 더 올리고, 그 슬러그를 여기 넣으면 된다.
+// (상담사가 5명을 넘어가면 Supabase agent_cards 테이블로 옮긴다)
+const AGENT_CARDS = [
+  { name: '심준형', url: 'https://bunyang-card.vercel.app/' },
+];
+
+async function copyCardLink(btn) {
+  const msg = document.getElementById('d-card-msg');
+  // 지금은 한 장뿐이라 바로 복사한다. 여러 장이 되면 고르게 한다.
+  const card = AGENT_CARDS.length === 1
+    ? AGENT_CARDS[0]
+    : AGENT_CARDS.find(c => c.name === (document.getElementById('d-assignee')?.value || '').trim())
+      || AGENT_CARDS[0];
+
+  const text = `${card.name} 분양상담사 명함\n${card.url}`;
+  try {
+    await navigator.clipboard.writeText(text);
+    msg.textContent = `${card.name} 명함 링크를 복사했습니다`;
+    msg.style.color = 'var(--green)';
+  } catch (e) {
+    // 클립보드가 막힌 브라우저에서는 직접 복사할 수 있게 띄운다
+    prompt('아래 내용을 복사하세요:', text);
+    msg.textContent = '';
+  }
+  setTimeout(() => { if (msg) { msg.textContent = ''; msg.style.color = ''; } }, 2800);
 }
 
 async function saveDetail(id) {
