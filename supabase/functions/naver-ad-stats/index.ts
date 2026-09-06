@@ -48,6 +48,14 @@ const IDS_PER_CALL = 100;
 // 조회 가능한 최대 기간. 실수로 몇 년치를 긁어 타임아웃 나는 것을 막는다.
 const MAX_DAYS = 180;
 
+// daily 는 하루에 한 번씩 네이버를 부르므로 기간을 더 좁게 잡는다.
+// 62일이면 두 달치라 추이를 보기에 충분하고, 호출 수도 감당된다.
+const MAX_DAILY_DAYS = 62;
+
+// daily 를 순차로 돌리면 30일에 30번이라 너무 느리다. 몇 개씩 겹쳐 던진다.
+// 너무 올리면 네이버가 429를 줄 수 있어 6으로 뒀다.
+const DAILY_CONCURRENCY = 6;
+
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -177,7 +185,6 @@ async function fetchStats(
   since: string,
   until: string,
   fields: string[],
-  timeIncrement?: string,
 ) {
   const rows: Array<Record<string, unknown>> = [];
   const errors: Array<{ status: number; body: unknown }> = [];
@@ -190,7 +197,6 @@ async function fetchStats(
     // fields·timeRange 는 JSON 문자열이어야 한다. CSV로 넘기면 400이 난다.
     p.set('fields', JSON.stringify(fields));
     p.set('timeRange', JSON.stringify({ since, until }));
-    if (timeIncrement) p.set('timeIncrement', timeIncrement);
 
     const r = await naverGet('/stats', p);
     if (!r.ok) { errors.push({ status: r.status, body: r.body }); continue; }
@@ -321,34 +327,43 @@ Deno.serve(async (req) => {
     const nameById = new Map(campaigns.map((c) => [c.nccCampaignId, c.name ?? c.nccCampaignId]));
 
     // ── 일별 추이 ─────────────────────────────────────────────
+    // /stats 는 일별 분할을 못 한다. timeIncrement 를 넣어봤지만
+    // 값이 '1'이면 11001(지원하지 않는 기능), 그 외 값은 조용히 무시되고
+    // 기간 합계가 그대로 돌아온다. 그래서 하루씩 따로 물어보는 수밖에 없다.
+    //
+    // 대신 순차로 돌면 30일에 30번이라 느리므로 몇 개씩 동시에 던진다.
+    // timeRange 가 제대로 먹는 것은 확인했다 — 주 단위로 쪼개 더한 값이
+    // 30일 합계와 정확히 일치했다.
     if (action === 'daily') {
-      // timeIncrement 값은 계정/문서마다 표기가 갈린다. 기본을 하나 쓰되
-      // 호출할 때 바꿀 수 있게 열어뒀다. 안 먹으면 raw 로 확인할 것.
-      const inc = typeof input.timeIncrement === 'string' ? input.timeIncrement : '1';
-      const { rows, errors } = await fetchStats(ids, since, until, fields, inc);
-
-      // 날짜별로 합산한다. 날짜는 응답 위치가 계정 설정에 따라 달라서
-      // 알려진 자리를 순서대로 훑는다.
-      const byDay = new Map<string, { imp: number; clk: number; cost: number }>();
-      for (const r of rows) {
-        const seg = (r as { segs?: Array<{ value?: string }> }).segs;
-        const day =
-          (typeof (r as Record<string, unknown>).dateStart === 'string' && (r as Record<string, string>).dateStart) ||
-          (typeof (r as Record<string, unknown>).statDt === 'string' && (r as Record<string, string>).statDt) ||
-          (Array.isArray(seg) && typeof seg[0]?.value === 'string' ? seg[0].value : '') ||
-          '';
-        const key = day.slice(0, 10);
-        if (!key) continue;
-        const cur = byDay.get(key) ?? { imp: 0, clk: 0, cost: 0 };
-        cur.imp += num(r.impCnt);
-        cur.clk += num(r.clkCnt);
-        cur.cost += num(r.salesAmt);
-        byDay.set(key, cur);
+      const days: string[] = [];
+      for (let d = since; d <= until; d = shiftDays(d, 1)) {
+        days.push(d);
+        if (days.length >= MAX_DAILY_DAYS) break;
       }
 
-      const daily = [...byDay.entries()]
-        .sort((a, b) => (a[0] < b[0] ? -1 : 1))
-        .map(([date, v]) => ({ date, ...derive(v.imp, v.clk, v.cost) }));
+      const daily: Array<{ date: string } & ReturnType<typeof derive>> = [];
+      const errors: Array<{ status: number; body: unknown }> = [];
+
+      for (let i = 0; i < days.length; i += DAILY_CONCURRENCY) {
+        const slice = days.slice(i, i + DAILY_CONCURRENCY);
+        const settled = await Promise.all(
+          slice.map(async (d) => {
+            const r = await fetchStats(ids, d, d, fields);
+            const t = r.rows.reduce((a, row) => ({
+              imp: a.imp + num(row.impCnt),
+              clk: a.clk + num(row.clkCnt),
+              cost: a.cost + num(row.salesAmt),
+            }), { imp: 0, clk: 0, cost: 0 });
+            return { date: d, t, errors: r.errors };
+          }),
+        );
+        for (const s of settled) {
+          errors.push(...s.errors);
+          daily.push({ date: s.date, ...derive(s.t.imp, s.t.clk, s.t.cost) });
+        }
+      }
+
+      daily.sort((a, b) => (a.date < b.date ? -1 : 1));
 
       const t = daily.reduce((a, d) => ({
         imp: a.imp + d.impCnt, clk: a.clk + d.clkCnt, cost: a.cost + d.salesAmt,
@@ -356,16 +371,12 @@ Deno.serve(async (req) => {
 
       return json({
         action, ok: errors.length === 0, since, until,
-        timeIncrement: inc,
         ids: ids.length,
-        rowsReturned: rows.length,
+        daysQueried: days.length,
         daily,
         totals: derive(t.imp, t.clk, t.cost),
-        // 날짜를 하나도 못 갈랐으면 timeIncrement 표기가 안 맞는 것이다.
-        note: rows.length > 0 && daily.length === 0
-          ? 'timeIncrement 값이 이 계정에서 통하지 않는 것 같습니다. action:"raw" 로 /stats 응답 원문을 확인하세요.'
-          : undefined,
-        errors: errors.length ? errors : undefined,
+        notice: 'salesAmt(광고비)는 부가세 별도 기준입니다.',
+        errors: errors.length ? errors.slice(0, 5) : undefined,
       });
     }
 
