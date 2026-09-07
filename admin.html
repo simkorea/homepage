@@ -855,6 +855,10 @@
         <iconify-icon icon="solar:wallet-money-bold"></iconify-icon>
         네이버 광고비
       </button>
+      <button class="tab-btn" id="tab-cards-btn" onclick="switchTab('cards')">
+        <iconify-icon icon="solar:card-2-bold"></iconify-icon>
+        명함 관리
+      </button>
       <button class="tab-btn" id="tab-visitor-btn" onclick="switchTab('visitor')">
         <iconify-icon icon="solar:users-group-rounded-bold"></iconify-icon>
         방문자 통계
@@ -1307,6 +1311,47 @@
       </p>
     </div>
 
+    <!-- ── 탭: 명함 관리 ──────────────────────────────────────
+         상담사·직원 명함 한 장이 agent_cards 의 한 행이다.
+         여기서 저장하면 배포 없이 링크가 바로 살아난다.
+         (이전에는 한 사람당 HTML 파일 하나여서 커밋·배포가 필요했다) -->
+    <div class="tab-content" id="tab-cards">
+      <div class="section-head" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+        <div>
+          <h2 style="font-size:17px;font-weight:700;">상담사 명함</h2>
+          <p style="font-size:12.5px;color:var(--text-dim);margin-top:5px;">
+            저장하면 <strong>배포 없이</strong> 링크가 바로 열립니다. 반영에 최대 1분 걸립니다.
+          </p>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="refresh-btn" onclick="loadCards()">
+            <iconify-icon icon="solar:refresh-bold"></iconify-icon> 새로고침
+          </button>
+          <button class="save-btn" style="margin-top:0;" onclick="openCardEditor(null)">+ 새 명함</button>
+        </div>
+      </div>
+
+      <div class="filter-bar" id="cards-filter" style="flex-wrap:wrap;"></div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>이름</th>
+              <th>직함</th>
+              <th>현장</th>
+              <th>연락처</th>
+              <th>주소</th>
+              <th>공개</th>
+              <th style="width:200px">작업</th>
+            </tr>
+          </thead>
+          <tbody id="cards-tbody"><tr class="empty-row"><td colspan="7">탭을 열면 불러옵니다.</td></tr></tbody>
+        </table>
+      </div>
+      <p id="cards-msg" style="font-size:12.5px;color:var(--text-dim);margin-top:12px;"></p>
+    </div>
+
     <!-- ── 탭: 방문자 통계 ── -->
     <div class="tab-content" id="tab-visitor">
       <div class="section-head" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
@@ -1451,6 +1496,20 @@
 </div>
 
 <!-- ── 관리자 관리 (대표 관리자 전용) ── -->
+<!-- ── 명함 편집 ──────────────────────────────────────────────
+     facts·sites·creds 는 사람마다 항목 수가 달라서 줄 단위로 받는다.
+     행을 추가·삭제하는 UI를 만드는 것보다 이쪽이 손이 빠르고, 붙여넣기로
+     한 번에 넣을 수도 있다. -->
+<div class="modal-overlay" id="card-modal" onclick="if(event.target===this) closeCardEditor()">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal-header">
+      <div class="modal-title" id="card-modal-title">명함</div>
+      <button class="modal-close" onclick="closeCardEditor()">✕</button>
+    </div>
+    <div id="card-form"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="admin-modal" onclick="if(event.target===this) closeAdminModal()">
   <div class="modal">
     <div class="modal-header">
@@ -2146,32 +2205,31 @@ function openDetail(id) {
 }
 
 // ── 상담사 명함 링크 ─────────────────────────────────────────
-// 상담사가 늘면 여기에 줄을 추가한다. 명함 저장소에 {슬러그}.html을
-// 하나 더 올리고, 그 슬러그를 여기 넣으면 된다.
-// (상담사가 5명을 넘어가면 Supabase agent_cards 테이블로 옮긴다)
-const AGENT_CARDS = [
-  { name: '심준형', url: 'https://bunyang-card.vercel.app/' },
-];
-
+// 명함 목록은 agent_cards 에서 읽는다. 예전에는 여기 배열로 박아뒀는데,
+// 직원이 늘 때마다 코드를 고쳐야 해서 DB로 옮겼다.
+// 담당자 칸에 적힌 이름과 같은 명함을 우선 고른다.
 async function copyCardLink(btn) {
   const msg = document.getElementById('d-card-msg');
-  // 지금은 한 장뿐이라 바로 복사한다. 여러 장이 되면 고르게 한다.
-  const card = AGENT_CARDS.length === 1
-    ? AGENT_CARDS[0]
-    : AGENT_CARDS.find(c => c.name === (document.getElementById('d-assignee')?.value || '').trim())
-      || AGENT_CARDS[0];
+  const show = (t, color) => {
+    msg.textContent = t; msg.style.color = color || '';
+    setTimeout(() => { if (msg) { msg.textContent = ''; msg.style.color = ''; } }, 2800);
+  };
 
-  const text = `${card.name} 분양상담사 명함\n${card.url}`;
+  const cards = await fetchCards();
+  if (!cards.length) { show('등록된 명함이 없습니다. 명함 관리 탭에서 먼저 만드세요.', 'var(--red)'); return; }
+
+  const who = (document.getElementById('d-assignee')?.value || '').trim();
+  const card = cards.find(c => c.name === who) || cards[0];
+
+  const text = `${card.name} ${card.role || '분양상담사'} 명함\n${cardUrl(card.slug)}`;
   try {
     await navigator.clipboard.writeText(text);
-    msg.textContent = `${card.name} 명함 링크를 복사했습니다`;
-    msg.style.color = 'var(--green)';
+    show(`${card.name} 명함 링크를 복사했습니다`, 'var(--green)');
   } catch (e) {
     // 클립보드가 막힌 브라우저에서는 직접 복사할 수 있게 띄운다
     prompt('아래 내용을 복사하세요:', text);
     msg.textContent = '';
   }
-  setTimeout(() => { if (msg) { msg.textContent = ''; msg.style.color = ''; } }, 2800);
 }
 
 async function saveDetail(id) {
@@ -2245,7 +2303,7 @@ function startClock() {
 // TABS
 // ══════════════════════════════════════════
 function switchTab(tab) {
-  ['consult', 'fraud', 'calendar', 'perf', 'ads', 'visitor', 'keyword'].forEach(t => {
+  ['consult', 'fraud', 'calendar', 'perf', 'ads', 'cards', 'visitor', 'keyword'].forEach(t => {
     document.getElementById('tab-' + t).classList.toggle('active', t === tab);
     document.getElementById('tab-' + t + '-btn').classList.toggle('active', t === tab);
   });
@@ -2255,6 +2313,7 @@ function switchTab(tab) {
   if (tab === 'calendar') renderCalendar();
   if (tab === 'perf')     loadPerfData();
   if (tab === 'ads')      loadAdsData();
+  if (tab === 'cards')    loadCards();
 }
 
 
@@ -3550,6 +3609,270 @@ document.getElementById('bid-file').addEventListener('change', (e) => {
   const f = e.target.files && e.target.files[0];
   if (f) handleBidCsv(f);
 });
+
+// ══════════════════════════════════════════
+// 명함 관리
+// ──────────────────────────────────────────
+// 명함 한 장 = agent_cards 의 한 행. 여기서 저장하면 배포 없이 링크가
+// 바로 살아난다. 이전에는 한 사람당 HTML 파일 하나여서 커밋·푸시·배포를
+// 거쳐야 했고, 1명당 10분이라 현장마다 직원을 만들 수가 없었다.
+//
+// facts·sites·creds 는 jsonb 다. 사람마다 항목 수가 달라 표로 쪼개지
+// 않았고, 편집은 줄 단위 텍스트로 받는다.
+// ══════════════════════════════════════════
+const CARD_BASE = 'https://bunyang-card.vercel.app';
+const CARD_BUCKET = 'agent-photos';
+const cardUrl = (slug) => `${CARD_BASE}/${slug}`;
+
+let cardsData = [];
+let cardsFilter = '전체';
+
+async function fetchCards() {
+  const { data, error } = await _sb.from('agent_cards')
+    .select('*').order('published', { ascending: false }).order('name');
+  if (error) throw error;
+  cardsData = data || [];
+  return cardsData;
+}
+
+async function loadCards() {
+  const tb = document.getElementById('cards-tbody');
+  const msg = document.getElementById('cards-msg');
+  tb.innerHTML = '<tr class="empty-row"><td colspan="7">불러오는 중…</td></tr>';
+  try {
+    await fetchCards();
+    renderCardsFilter();
+    renderCards();
+    msg.textContent = `총 ${cardsData.length}장 · 공개 ${cardsData.filter(c => c.published).length}장`;
+  } catch (err) {
+    tb.innerHTML = `<tr class="empty-row"><td colspan="7">불러오지 못했습니다: ${esc(err.message)}</td></tr>`;
+  }
+}
+
+function renderCardsFilter() {
+  // 현장이 비어 있는 카드도 있으므로 있는 것만 버튼으로 만든다
+  const sites = [...new Set(cardsData.map(c => c.site).filter(Boolean))].sort();
+  const bar = document.getElementById('cards-filter');
+  const btn = (label, count) =>
+    `<button class="filter-btn${cardsFilter === label ? ' active' : ''}" onclick="setCardsFilter('${esc(label)}')">${esc(label)}${count != null ? ' ' + count : ''}</button>`;
+  bar.innerHTML = btn('전체', cardsData.length)
+    + sites.map(s => btn(s, cardsData.filter(c => c.site === s).length)).join('')
+    + (cardsData.some(c => !c.site) ? btn('현장 미지정', cardsData.filter(c => !c.site).length) : '');
+}
+
+function setCardsFilter(f) { cardsFilter = f; renderCardsFilter(); renderCards(); }
+
+function renderCards() {
+  const rows = cardsData.filter(c =>
+    cardsFilter === '전체' ? true :
+    cardsFilter === '현장 미지정' ? !c.site : c.site === cardsFilter);
+
+  const tb = document.getElementById('cards-tbody');
+  tb.innerHTML = rows.length ? rows.map(c => `
+    <tr>
+      <td><strong>${esc(c.name)}</strong></td>
+      <td>${esc(c.role || '—')}</td>
+      <td>${c.site ? esc(c.site) : '<span style="color:var(--text-dim)">—</span>'}</td>
+      <td>${esc(c.mobile || c.tel || '—')}</td>
+      <td><a href="${esc(cardUrl(c.slug))}" target="_blank" rel="noopener" style="color:var(--gold)">/${esc(c.slug)}</a></td>
+      <td>${c.published
+        ? '<span class="badge badge-card">공개</span>'
+        : '<span class="badge badge-unknown">비공개</span>'}</td>
+      <td style="white-space:nowrap">
+        <button class="refresh-btn" style="display:inline-flex" onclick="copyOneCard('${esc(c.slug)}',this)">링크</button>
+        <button class="refresh-btn" style="display:inline-flex" onclick="openCardEditor('${esc(c.slug)}')">수정</button>
+        <button class="refresh-btn" style="display:inline-flex;color:var(--red)" onclick="deleteCard('${esc(c.slug)}')">삭제</button>
+      </td>
+    </tr>`).join('')
+    : '<tr class="empty-row"><td colspan="7">명함이 없습니다. “+ 새 명함”을 눌러 만드세요.</td></tr>';
+}
+
+async function copyOneCard(slug, btn) {
+  const c = cardsData.find(x => x.slug === slug);
+  const text = `${c.name} ${c.role || '분양상담사'} 명함\n${cardUrl(slug)}`;
+  const orig = btn.textContent;
+  try { await navigator.clipboard.writeText(text); btn.textContent = '복사됨'; }
+  catch (e) { prompt('아래 내용을 복사하세요:', text); }
+  setTimeout(() => { btn.textContent = orig; }, 1800);
+}
+
+// ── 줄 단위 ↔ jsonb 변환 ────────────────────────────────────
+// 화면에서는 한 줄에 하나씩 쓰고, DB에는 배열로 넣는다.
+const linesToFacts = (t) => t.split('\n').map(l => l.trim()).filter(Boolean)
+  .map(l => { const [n, ...rest] = l.split('|'); return { n: (n || '').trim(), l: rest.join('|').trim() }; })
+  .filter(f => f.n);
+const factsToLines = (a) => (a || []).map(f => `${f.n} | ${f.l || ''}`).join('\n');
+
+const linesToSites = (t) => t.split('\n').map(l => l.trim()).filter(Boolean)
+  .map(l => { const p = l.split('|').map(s => s.trim()); return { nm: p[0] || '', ds: p[1] || '', url: p[2] || '' }; })
+  .filter(s => s.nm && s.url);
+const sitesToLines = (a) => (a || []).map(s => `${s.nm} | ${s.ds || ''} | ${s.url}`).join('\n');
+
+const linesToList = (t) => t.split('\n').map(l => l.trim()).filter(Boolean);
+const listToLines = (a) => (a || []).join('\n');
+
+function openCardEditor(slug) {
+  const c = slug ? cardsData.find(x => x.slug === slug) : null;
+  const isNew = !c;
+  document.getElementById('card-modal-title').textContent = isNew ? '새 명함' : `명함 수정 — ${c.name}`;
+
+  const f = (id, label, val, hint, type) => `
+    <div style="margin-bottom:14px">
+      <div class="detail-label" style="margin-bottom:6px">${label}</div>
+      <input class="memo-in" id="${id}" type="${type || 'text'}" value="${esc(val || '')}">
+      ${hint ? `<div style="font-size:11.5px;color:var(--text-dim);margin-top:5px">${hint}</div>` : ''}
+    </div>`;
+  const ta = (id, label, val, hint, h) => `
+    <div style="margin-bottom:14px">
+      <div class="detail-label" style="margin-bottom:6px">${label}</div>
+      <textarea class="memo-box" id="${id}" style="min-height:${h || 72}px">${esc(val || '')}</textarea>
+      ${hint ? `<div style="font-size:11.5px;color:var(--text-dim);margin-top:5px">${hint}</div>` : ''}
+    </div>`;
+
+  document.getElementById('card-form').innerHTML = `
+    ${f('c-slug', '주소 (슬러그)', c ? c.slug : '',
+        isNew ? '영문 소문자·숫자·하이픈만. 예: <code>hong</code> → ' + CARD_BASE + '/hong · <strong>만든 뒤에는 못 바꿉니다</strong>'
+              : '이미 나눠준 링크가 깨지므로 바꿀 수 없습니다.')}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      ${f('c-name', '이름', c && c.name)}
+      ${f('c-role', '직함', c ? c.role : '분양상담사')}
+      ${f('c-org', '소속 상호', c ? c.org : '더 타임즈 플레이스')}
+      ${f('c-orgen', '영문 표기 (히어로 상단)', c ? c.org_en : 'THE TIMES PLACE')}
+      ${f('c-site', '담당 현장', c && c.site, '목록에서 묶어 보는 데 씁니다')}
+      ${f('c-tel', '대표번호', c ? c.tel : '1555-1087')}
+      ${f('c-mobile', '개인 휴대폰', c && c.mobile, '넣으면 전화·문자 버튼이 이쪽으로 걸립니다')}
+      ${f('c-kakao', '카카오 오픈채팅 링크', c && c.kakao_url, '비우면 버튼이 비활성으로 나옵니다')}
+    </div>
+    ${ta('c-tagline', '한 줄 소개', c && c.tagline, '카카오톡 미리보기에 이 문장이 뜹니다', 56)}
+    ${ta('c-about', '소개', c && c.about, '', 110)}
+    ${ta('c-facts', '숫자 강조', c ? factsToLines(c.facts) : '', '한 줄에 하나. <code>값 | 라벨</code> — 예: <code>9 | 담당 현장</code>', 70)}
+    ${ta('c-sites', '담당 현장 링크', c ? sitesToLines(c.sites) : '', '한 줄에 하나. <code>이름 | 설명 | 주소</code>', 90)}
+    ${ta('c-creds', '경력 · 이력', c ? listToLines(c.creds) : '', '한 줄에 하나. 비우면 그 섹션이 통째로 숨습니다', 70)}
+
+    <div style="margin-bottom:14px">
+      <div class="detail-label" style="margin-bottom:6px">프로필 사진</div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <img id="c-photo-prev" src="${esc(c && c.photo_url || '')}" alt=""
+             style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:1px solid var(--border);${c && c.photo_url ? '' : 'display:none'}">
+        <input type="file" id="c-photo-file" accept="image/*" style="font-size:12px;color:var(--text-dim)">
+        <button class="refresh-btn" onclick="clearCardPhoto()">사진 지우기</button>
+      </div>
+      <input type="hidden" id="c-photo" value="${esc(c && c.photo_url || '')}">
+      <div id="c-photo-msg" style="font-size:11.5px;color:var(--text-dim);margin-top:6px">
+        비우면 이름 첫 글자가 대신 나옵니다.
+      </div>
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer">
+        <input type="checkbox" id="c-published" ${c && c.published ? 'checked' : ''}>
+        공개 — 끄면 주소로 들어와도 404가 됩니다
+      </label>
+    </div>
+
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="save-btn" style="margin-top:0" id="c-save" onclick="saveCard(${isNew ? 'null' : `'${esc(c.slug)}'`})">저장</button>
+      <button class="refresh-btn" onclick="closeCardEditor()">취소</button>
+      <span id="c-msg" style="font-size:12.5px"></span>
+    </div>`;
+
+  if (!isNew) document.getElementById('c-slug').disabled = true;
+  document.getElementById('c-photo-file').addEventListener('change', uploadCardPhoto);
+  document.getElementById('card-modal').classList.add('open');
+}
+
+function closeCardEditor() { document.getElementById('card-modal').classList.remove('open'); }
+
+function clearCardPhoto() {
+  document.getElementById('c-photo').value = '';
+  const p = document.getElementById('c-photo-prev');
+  p.src = ''; p.style.display = 'none';
+  document.getElementById('c-photo-msg').textContent = '사진을 뺐습니다. 저장해야 반영됩니다.';
+}
+
+// 사진은 Storage 공개 버킷에 올린다. 이미지 때문에 커밋할 일이 없어진다.
+async function uploadCardPhoto(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const msg = document.getElementById('c-photo-msg');
+  if (file.size > 5 * 1024 * 1024) { msg.textContent = '5MB 이하만 올려주세요.'; msg.style.color = 'var(--red)'; return; }
+
+  const slug = (document.getElementById('c-slug').value || 'tmp').trim().toLowerCase();
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+  // 같은 사람이 사진을 바꿔도 캐시된 옛 사진이 남지 않게 시각을 붙인다
+  const path = `${slug}/${Date.now()}.${ext}`;
+
+  msg.textContent = '올리는 중…'; msg.style.color = '';
+  const { error } = await _sb.storage.from(CARD_BUCKET).upload(path, file, { upsert: true, contentType: file.type });
+  if (error) { msg.textContent = '실패: ' + error.message; msg.style.color = 'var(--red)'; return; }
+
+  const { data } = _sb.storage.from(CARD_BUCKET).getPublicUrl(path);
+  document.getElementById('c-photo').value = data.publicUrl;
+  const p = document.getElementById('c-photo-prev');
+  p.src = data.publicUrl; p.style.display = '';
+  msg.textContent = '올렸습니다. 저장해야 반영됩니다.'; msg.style.color = 'var(--green)';
+}
+
+async function saveCard(existingSlug) {
+  const btn = document.getElementById('c-save');
+  const msg = document.getElementById('c-msg');
+  const v = (id) => (document.getElementById(id).value || '').trim();
+
+  const slug = (existingSlug || v('c-slug')).toLowerCase();
+  if (!/^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/.test(slug)) {
+    msg.textContent = '주소는 영문 소문자·숫자·하이픈으로 3자 이상이어야 합니다.';
+    msg.style.color = 'var(--red)'; return;
+  }
+  if (!v('c-name')) { msg.textContent = '이름을 입력하세요.'; msg.style.color = 'var(--red)'; return; }
+
+  const row = {
+    slug,
+    name: v('c-name'),
+    role: v('c-role') || '분양상담사',
+    org: v('c-org') || null,
+    org_en: v('c-orgen') || null,
+    site: v('c-site') || null,
+    tel: v('c-tel') || null,
+    mobile: v('c-mobile') || null,
+    kakao_url: v('c-kakao') || null,
+    photo_url: v('c-photo') || null,
+    tagline: v('c-tagline') || null,
+    about: v('c-about') || null,
+    facts: linesToFacts(v('c-facts')),
+    sites: linesToSites(v('c-sites')),
+    creds: linesToList(v('c-creds')),
+    published: document.getElementById('c-published').checked,
+  };
+
+  btn.disabled = true; btn.textContent = '저장 중…';
+  const { error } = existingSlug
+    ? await _sb.from('agent_cards').update(row).eq('slug', existingSlug)
+    : await _sb.from('agent_cards').insert(row);
+  btn.disabled = false; btn.textContent = '저장';
+
+  if (error) {
+    // 같은 슬러그가 이미 있는 경우가 가장 흔하다
+    msg.textContent = /duplicate|unique/i.test(error.message)
+      ? '이미 쓰고 있는 주소입니다. 다른 주소를 쓰세요.'
+      : '저장 실패: ' + error.message;
+    msg.style.color = 'var(--red)';
+    return;
+  }
+  closeCardEditor();
+  await loadCards();
+}
+
+async function deleteCard(slug) {
+  const c = cardsData.find(x => x.slug === slug);
+  if (!confirm(
+    `${c.name} 명함을 삭제합니다.\n\n${cardUrl(slug)} 주소가 즉시 404가 됩니다.\n` +
+    `이미 나눠준 링크가 있으면 전부 끊깁니다.\n\n` +
+    `잠시 감추려는 것이면 삭제 대신 "수정"에서 공개를 끄세요. 계속할까요?`
+  )) return;
+  const { error } = await _sb.from('agent_cards').delete().eq('slug', slug);
+  if (error) { alert('삭제 실패: ' + error.message); return; }
+  await loadCards();
+}
 
 // ══════════════════════════════════════════
 // INIT
