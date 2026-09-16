@@ -3852,6 +3852,7 @@ function openCardEditor(slug) {
       ${f('c-tel', '대표번호', c ? c.tel : '1555-1087')}
       ${f('c-mobile', '개인 휴대폰', c && c.mobile, '넣으면 전화·문자 버튼이 이쪽으로 걸립니다')}
       ${f('c-kakao', '카카오 오픈채팅 링크', c && c.kakao_url, '비우면 버튼이 비활성으로 나옵니다')}
+      ${f('c-email', '이메일 (알림용)', c && c.email, '상담·예약이 들어오면 이 주소로 알림을 보냅니다. 비우면 알림 없이 관리자에서만 확인')}
     </div>
     ${ta('c-tagline', '한 줄 소개', c && c.tagline, '카카오톡 미리보기에 이 문장이 뜹니다', 56)}
     ${ta('c-about', '소개', c && c.about, '', 110)}
@@ -3873,6 +3874,20 @@ function openCardEditor(slug) {
       </div>
     </div>
 
+    <div style="margin-bottom:14px">
+      <div class="detail-label" style="margin-bottom:6px">대표 이미지 (선택 — 개인 배너)</div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <img id="c-hero-prev" src="${esc(c && c.hero_url || '')}" alt=""
+             style="width:96px;height:60px;border-radius:6px;object-fit:cover;border:1px solid var(--border);${c && c.hero_url ? '' : 'display:none'}">
+        <input type="file" id="c-hero-file" accept="image/*" style="font-size:12px;color:var(--text-dim)">
+        <button class="refresh-btn" onclick="clearCardHero()">이미지 지우기</button>
+      </div>
+      <input type="hidden" id="c-hero" value="${esc(c && c.hero_url || '')}">
+      <div id="c-hero-msg" style="font-size:11.5px;color:var(--text-dim);margin-top:6px">
+        비우면 현장 대표 이미지가 대신 쓰입니다. 이 사람만 다른 배너를 쓰고 싶을 때만 채우세요.
+      </div>
+    </div>
+
     <div style="margin-bottom:16px">
       <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer">
         <input type="checkbox" id="c-published" ${c && c.published ? 'checked' : ''}>
@@ -3888,6 +3903,7 @@ function openCardEditor(slug) {
 
   if (!isNew) document.getElementById('c-slug').disabled = true;
   document.getElementById('c-photo-file').addEventListener('change', uploadCardPhoto);
+  document.getElementById('c-hero-file').addEventListener('change', uploadCardHero);
   document.getElementById('card-modal').classList.add('open');
 }
 
@@ -3923,6 +3939,36 @@ async function uploadCardPhoto(e) {
   msg.textContent = '올렸습니다. 저장해야 반영됩니다.'; msg.style.color = 'var(--green)';
 }
 
+function clearCardHero() {
+  document.getElementById('c-hero').value = '';
+  const p = document.getElementById('c-hero-prev');
+  p.src = ''; p.style.display = 'none';
+  document.getElementById('c-hero-msg').textContent = '이미지를 뺐습니다. 저장해야 반영됩니다.';
+}
+
+// 프로필 사진과 같은 버킷·같은 방식. 경로만 hero- 접두사로 구분해
+// 같은 폴더에서 프로필 사진과 안 겹치게 한다.
+async function uploadCardHero(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const msg = document.getElementById('c-hero-msg');
+  if (file.size > 5 * 1024 * 1024) { msg.textContent = '5MB 이하만 올려주세요.'; msg.style.color = 'var(--red)'; return; }
+
+  const slug = (document.getElementById('c-slug').value || 'tmp').trim().toLowerCase();
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const path = `${slug}/hero-${Date.now()}.${ext}`;
+
+  msg.textContent = '올리는 중…'; msg.style.color = '';
+  const { error } = await _sb.storage.from(CARD_BUCKET).upload(path, file, { upsert: true, contentType: file.type });
+  if (error) { msg.textContent = '실패: ' + error.message; msg.style.color = 'var(--red)'; return; }
+
+  const { data } = _sb.storage.from(CARD_BUCKET).getPublicUrl(path);
+  document.getElementById('c-hero').value = data.publicUrl;
+  const p = document.getElementById('c-hero-prev');
+  p.src = data.publicUrl; p.style.display = '';
+  msg.textContent = '올렸습니다. 저장해야 반영됩니다.'; msg.style.color = 'var(--green)';
+}
+
 async function saveCard(existingSlug) {
   const btn = document.getElementById('c-save');
   const msg = document.getElementById('c-msg');
@@ -3945,7 +3991,9 @@ async function saveCard(existingSlug) {
     tel: v('c-tel') || null,
     mobile: v('c-mobile') || null,
     kakao_url: v('c-kakao') || null,
+    email: v('c-email') || null,
     photo_url: v('c-photo') || null,
+    hero_url: v('c-hero') || null,
     tagline: v('c-tagline') || null,
     about: v('c-about') || null,
     facts: linesToFacts(v('c-facts')),
