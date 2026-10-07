@@ -855,6 +855,10 @@
         <iconify-icon icon="solar:wallet-money-bold"></iconify-icon>
         네이버 광고비
       </button>
+      <button class="tab-btn" id="tab-toss-btn" onclick="switchTab('toss')">
+        <iconify-icon icon="solar:wallet-money-bold"></iconify-icon>
+        토스 광고비
+      </button>
       <button class="tab-btn" id="tab-cards-btn" onclick="switchTab('cards')">
         <iconify-icon icon="solar:card-2-bold"></iconify-icon>
         명함 관리
@@ -1309,6 +1313,61 @@
         <a href="javascript:switchTab('keyword')" style="color:var(--gold);">검색어 분석</a> 탭에서 봅니다.
         여기서 중복해 보여주지 않습니다.
       </p>
+    </div>
+
+    <!-- ── 탭: 토스 광고비 ────────────────────────────────────
+         toss-ad-stats Edge Function 이 토스 Reporting API 를 부른다.
+         키는 그 함수 시크릿에만 있다. 리드 이름·번호는 여기 없고
+         toss-lead-webhook 이 상담 목록(토스-…)으로 넣는다. -->
+    <div class="tab-content" id="tab-toss">
+      <div class="section-head" style="margin-bottom:16px;">
+        <h2 style="font-size:17px;font-weight:700;">토스애즈 집행 현황</h2>
+        <p style="font-size:12.5px;color:var(--text-dim);margin-top:5px;">
+          토스 광고주센터 맞춤 보고서와 같은 숫자입니다(30분마다 갱신).
+          광고비는 <strong>부가세 별도</strong>. 비즈머니 잔액은 API로 나오지 않습니다.
+        </p>
+      </div>
+
+      <div class="filter-bar" id="toss-period" style="margin-bottom:14px;">
+        <button class="filter-btn" onclick="setTossPeriod(7)">최근 7일</button>
+        <button class="filter-btn active" onclick="setTossPeriod(30)">최근 30일</button>
+        <button class="filter-btn" onclick="setTossPeriod(90)">최근 90일</button>
+        <button class="refresh-btn" style="margin-left:auto;" onclick="loadTossData(true)">
+          <iconify-icon icon="solar:refresh-bold"></iconify-icon> 새로고침
+        </button>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">광고비 (VAT 별도)</div><div class="stat-value gold" id="toss-cost">—</div></div>
+        <div class="stat-card"><div class="stat-label">과금 클릭</div><div class="stat-value" id="toss-clk">—</div></div>
+        <div class="stat-card"><div class="stat-label">리드</div><div class="stat-value" id="toss-leads">—</div></div>
+        <div class="stat-card"><div class="stat-label">리드당 비용</div><div class="stat-value" id="toss-cpl">—</div></div>
+      </div>
+
+      <p id="toss-msg" style="font-size:12.5px;color:var(--text-dim);margin:4px 0 14px;"></p>
+
+      <div class="table-wrap" style="margin-bottom:20px;padding:14px 16px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;">일별 추이</div>
+        <div style="position:relative;height:260px;"><canvas id="toss-chart"></canvas></div>
+      </div>
+
+      <div class="table-wrap">
+        <div style="padding:14px 16px 0;font-size:13px;font-weight:700;">캠페인별 집행</div>
+        <table>
+          <thead>
+            <tr>
+              <th>캠페인</th>
+              <th style="text-align:right">노출</th>
+              <th style="text-align:right">과금 클릭</th>
+              <th style="text-align:right">CPC</th>
+              <th style="text-align:right">리드</th>
+              <th style="text-align:right">리드당 비용</th>
+              <th style="text-align:right">광고비</th>
+            </tr>
+          </thead>
+          <tbody id="toss-tbody"><tr class="empty-row"><td colspan="7">탭을 열면 불러옵니다.</td></tr></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- ── 탭: 명함 관리 ──────────────────────────────────────
@@ -2361,7 +2420,7 @@ function startClock() {
 // TABS
 // ══════════════════════════════════════════
 function switchTab(tab) {
-  ['consult', 'fraud', 'calendar', 'perf', 'ads', 'cards', 'visitor', 'keyword'].forEach(t => {
+  ['consult', 'fraud', 'calendar', 'perf', 'ads', 'toss', 'cards', 'visitor', 'keyword'].forEach(t => {
     document.getElementById('tab-' + t).classList.toggle('active', t === tab);
     document.getElementById('tab-' + t + '-btn').classList.toggle('active', t === tab);
   });
@@ -2371,6 +2430,7 @@ function switchTab(tab) {
   if (tab === 'calendar') renderCalendar();
   if (tab === 'perf')     loadPerfData();
   if (tab === 'ads')      loadAdsData();
+  if (tab === 'toss')     loadTossData();
   if (tab === 'cards')    loadCards();
 }
 
@@ -3559,6 +3619,98 @@ function renderAdsChart(rows) {
         // 광고비와 클릭은 자릿수가 달라 축을 나눈다. 한 축에 겹치면 클릭이 바닥에 붙는다.
         y:  { position: 'left',  beginAtZero: true, ticks: { color: dim, font: { size: 10 }, callback: v => (v / 10000).toFixed(0) + '만' }, grid: { color: grid } },
         y1: { position: 'right', beginAtZero: true, ticks: { color: dim, font: { size: 10 } }, grid: { drawOnChartArea: false } },
+      },
+    },
+  });
+}
+
+// ══════════════════════════════════════════
+// 토스 광고비 — toss-ad-stats Edge Function. 네이버 탭과 같은 구조.
+// ══════════════════════════════════════════
+let tossPeriod = 30;
+let tossChart = null;
+const tossCache = new Map();   // days -> report
+
+function setTossPeriod(days) {
+  tossPeriod = days;
+  document.querySelectorAll('#toss-period .filter-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.includes(String(days)));
+  });
+  loadTossData();
+}
+
+async function loadTossData(force) {
+  const msg = document.getElementById('toss-msg');
+  const tb = document.getElementById('toss-tbody');
+  const days = tossPeriod;
+  if (force) tossCache.delete(days);
+  if (tossCache.has(days)) { renderToss(tossCache.get(days)); return; }
+
+  msg.textContent = '토스에서 불러오는 중…';
+  tb.innerHTML = '<tr class="empty-row"><td colspan="7">불러오는 중…</td></tr>';
+  try {
+    const { data: sess } = await _sb.auth.getSession();
+    if (!sess.session) throw new Error('로그인이 만료되었습니다. 새로고침 후 다시 로그인해 주세요.');
+    const res = await fetch(SUPABASE_URL + '/functions/v1/toss-ad-stats', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + sess.session.access_token, 'apikey': SUPABASE_ANON, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'report', days }),
+    });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) throw new Error((body && body.error) || ('HTTP ' + res.status));
+    tossCache.set(days, body);
+    renderToss(body);
+  } catch (err) {
+    msg.innerHTML = '<span style="color:var(--red)">' + esc(err.message) + '</span>';
+    tb.innerHTML = '<tr class="empty-row"><td colspan="7">불러오지 못했습니다.</td></tr>';
+  }
+}
+
+function renderToss(r) {
+  const t = r.totals;
+  document.getElementById('toss-cost').textContent = wonFmt(t.spend);
+  document.getElementById('toss-clk').textContent = cntFmt(t.billable_clicks);
+  document.getElementById('toss-leads').textContent = cntFmt(t.leads);
+  document.getElementById('toss-cpl').textContent = t.leads ? wonFmt(t.cost_per_lead) : '—';
+
+  const live = (r.campaigns || []).filter(c => c.spend > 0 || c.impressions > 0);
+  document.getElementById('toss-msg').textContent =
+    `${r.since} ~ ${r.until} · 집행된 캠페인 ${live.length}개 · CPC ${t.billable_clicks ? wonFmt(t.cpc) : '—'}` +
+    (t.spend === 0 ? ' · 이 기간에 집행이 없습니다' : '');
+
+  document.getElementById('toss-tbody').innerHTML = live.length ? live.map(c => `
+    <tr>
+      <td>${esc(c.name)}</td>
+      <td style="text-align:right">${cntFmt(c.impressions)}</td>
+      <td style="text-align:right">${cntFmt(c.billable_clicks)}</td>
+      <td style="text-align:right">${c.billable_clicks ? wonFmt(c.cpc) : '—'}</td>
+      <td style="text-align:right">${cntFmt(c.leads)}</td>
+      <td style="text-align:right">${c.leads ? wonFmt(c.cost_per_lead) : '—'}</td>
+      <td style="text-align:right">${wonFmt(c.spend)}</td>
+    </tr>`).join('')
+    : '<tr class="empty-row"><td colspan="7">이 기간에 집행된 캠페인이 없습니다.</td></tr>';
+
+  const el = document.getElementById('toss-chart');
+  if (!el || typeof Chart === 'undefined') return;
+  if (tossChart) tossChart.destroy();
+  const rows = r.daily || [];
+  const dim = 'rgba(240,237,232,0.45)', grid = 'rgba(255,255,255,0.06)';
+  tossChart = new Chart(el, {
+    data: {
+      labels: rows.map(d => d.date.slice(5).replace('-', '/')),
+      datasets: [
+        { type: 'bar', label: '광고비(원)', data: rows.map(d => d.spend), backgroundColor: 'rgba(201,165,90,0.35)', borderColor: '#c9a55a', borderWidth: 1, yAxisID: 'y', order: 2 },
+        { type: 'line', label: '리드', data: rows.map(d => d.leads), borderColor: '#60a5fa', backgroundColor: '#60a5fa', borderWidth: 2, pointRadius: 2, tension: 0.25, yAxisID: 'y1', order: 1 },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { labels: { color: dim, boxWidth: 12, font: { size: 11 } } } },
+      scales: {
+        x: { ticks: { color: dim, font: { size: 10 }, maxRotation: 0, autoSkip: true }, grid: { color: grid } },
+        y: { position: 'left', beginAtZero: true, ticks: { color: dim, font: { size: 10 }, callback: v => (v / 10000).toFixed(0) + '만' }, grid: { color: grid } },
+        y1: { position: 'right', beginAtZero: true, ticks: { color: dim, font: { size: 10 }, precision: 0 }, grid: { drawOnChartArea: false } },
       },
     },
   });
