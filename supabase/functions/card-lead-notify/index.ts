@@ -54,9 +54,12 @@ Deno.serve(async (req) => {
       .eq('slug', slug)
       .maybeSingle();
 
-    if (!card?.email) {
-      return json({ skipped: 'no email on file', slug });
-    }
+    // 2026-10-07: Resend 발신이 onboarding@resend.dev 라 계정 주인(simkorea86@gmail.com)
+    // 에게만 보낼 수 있다(그 외 403). 직원 개인 메일은 도메인 인증 후에 card.email 로 바꾼다.
+    // 그때까지 모든 명함 문의는 대표 메일로 가고, 제목에 담당 직원 이름을 붙인다.
+    const to = Deno.env.get('ALERT_EMAIL') || 'simkorea86@gmail.com';
+    const agent = card?.name || slug;
+    const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
     const isVisit = typeof record.message === 'string' && record.message.startsWith('[방문 희망일]');
     const kind = isVisit ? '방문예약' : '상담문의';
@@ -72,15 +75,18 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         from: 'onboarding@resend.dev',
-        to: [card.email],
-        subject: `[분양명함] ${card.name}님, ${kind} 도착 — ${record.name || ''}`,
+        to: [to],
+        subject: `[분양명함] ${agent} 담당 — ${kind} 도착 — ${record.name || ''}`,
         html: `
           <div style="font-family:'Apple SD Gothic Neo',sans-serif;max-width:520px;margin:0 auto;">
-            <p><strong>${record.name || ''}</strong> (${record.phone || ''})</p>
-            <p style="white-space:pre-wrap;">${record.message || '(메시지 없음)'}</p>
+            <p>담당: <strong>${esc(agent)}</strong> (명함 ${esc(slug)})</p>
+            <p><strong>${esc(record.name)}</strong> (${esc(record.phone)})</p>
+            <p style="white-space:pre-wrap;">${esc(record.message || '(메시지 없음)')}</p>
+            <p><a href="https://homepage-iota-dun.vercel.app/admin.html">관리자 페이지에서 보기</a></p>
           </div>`,
       }),
     });
+    if (!res.ok) console.error('resend failed', res.status, await res.text());
 
     return json({ ok: res.ok, kind, slug, mailStatus: res.status });
   } catch (e) {
