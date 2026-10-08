@@ -2391,6 +2391,10 @@ function sourceBadgeHtml(source) {
   if (source.startsWith('명함-')) {
     return `<span class="badge badge-card">🪪 ${esc(source.slice(3))}</span>`;
   }
+  // 토스 광고 유입: 토스 웹훅(토스-현장)과 한강 사이트 폼(토스-한강…)이 같은 규칙을 쓴다
+  if (source.startsWith('토스-')) {
+    return `<span class="badge badge-card">토스 · ${esc(source.slice(3))}</span>`;
+  }
   if (source === 'PH1603') return '<span class="badge badge-ph1603">PH1603</span>';
   if (source === '신갈펜타원') return '<span class="badge badge-penta">신갈펜타원</span>';
   if (source === '더코리츠힐남산') return '<span class="badge badge-thekoritz">더코리츠힐남산</span>';
